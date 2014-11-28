@@ -27,8 +27,9 @@ def get_page(url):
 wangyi_url_template="http://music.163.com%s"
 
 class Playlist:
-	def __init__(self,html):
+	def __init__(self,playlist_id,html):
 		self.html = html
+		self.playlist_id = playlist_id
 		dom = etree.HTML(html.decode('utf8'))
 		self.favor_num, self.share_num, self.comment_num = self._get_playlist_info(dom)
 		self.play_times = self._get_play_times(dom)
@@ -55,27 +56,55 @@ class Playlist:
 
 	def _get_play_times(self,dom_tree):
 		play_times = 0
+		times_dom = dom_tree.xpath(u"//strong[@class='s-fc6 j-play-count']")[0]
+		play_times = int(times_dom.text)
 		return play_times
 	
 	def _get_tags_desc(self,dom_tree):
 		tags = []
 		desc = ''
+		tags_dom = dom_tree.xpath(u"//div[@class='tags f-cb']")[0]
+		for child in tags_dom.getchildren():
+			if child.tag == 'a':
+				tag = child.getchildren()[0].text.encode('utf8')
+				tags.append(tag)
+		try:
+			desc_dom = dom_tree.xpath(u"//p[@class='intr f-brk']")[0]
+			for text in desc_dom.itertext():
+				desc += text.encode('utf8')
+		except:
+			logging.info("There's no description for playlist")
+			pass
 		return tags, desc
 
 	def _get_song_list(self,dom_tree):
 		song_num=0
-		song_list = {}
-		return song_num,song_list
+		song_list = []
 		
+		num_dom = dom_tree.xpath(u"//span[@class='sub s-fc3 j-track-count']")[0]
+		song_num_text = num_dom.text.encode('utf8')
+		song_num = int(song_num_text[:song_num_text.index('首')])
+		
+		songlist_dom = dom_tree.xpath(u"//tbody[@id='m-song-list-module']")[0]
+		for song_dom in songlist_dom.getchildren():
+			song_list.append(song_dom.attrib['data-id'])
+	
+		return song_num,song_list
+	
+	def data_in_string(self):
+		return "%s\t"*9%(self.playlist_id,self.favor_num,self.share_num,self.comment_num,','.join(self.tags),self.desc,self.play_times,self.song_num,','.join(self.song_list))	
 
 def get_playlist_id(filepath):
 	with open(filepath,'rb') as fin:
 		for idx,line in enumerate(fin.readlines()):
 			line = line.strip().split('\t')
 			href = line[1]
+			playlist_id = line[0]
 			playlist_url = wangyi_url_template%(href)
+			logging.info("Crawling playlist: %s #%s"%(playlist_url,idx))
 			playlist_page = get_page(playlist_url)
-			playlist = Playlist(playlist_page)
+			playlist = Playlist(playlist_id,playlist_page)
+			print playlist.data_in_string()
 			if idx>10:
 				break
 
