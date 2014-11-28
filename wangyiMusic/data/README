@@ -1,0 +1,9 @@
+Description For Data
+
+#Filename: cate.dict
+#Desc: 	Category infomation for hot playlist at wangyi music
+#Column Annotation: category_name | category_theme
+
+#Filename: wangyi_playlist
+#Desc:	Playlist basic infomation at wangyi music
+#Colum Annotation:	playlist_id | playlist_href | playlist_name
