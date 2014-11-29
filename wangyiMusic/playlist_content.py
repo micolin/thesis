@@ -6,6 +6,7 @@ from lxml import etree
 import logging
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.crawl_content')
+#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 
 def get_page(url):
 	'''
@@ -31,12 +32,34 @@ class Playlist:
 		self.html = html
 		self.playlist_id = playlist_id
 		dom = etree.HTML(html.decode('utf8'))
-		self.favor_num, self.share_num, self.comment_num = self._get_playlist_info(dom)
-		self.play_times = self._get_play_times(dom)
-		self.tags, self.desc = self._get_tags_desc(dom)
-		self.song_num, self.song_list = self._get_song_list(dom)
+		self.playlist_name = self.__get_playlist_name(dom)
+		self.creator = self.__get_creator(dom)
+		self.favor_num, self.share_num, self.comment_num = self.__get_playlist_info(dom)
+		self.play_times = self.__get_play_times(dom)
+		self.tags, self.desc = self.__get_tags_desc(dom)
+		self.sim_playlists = self.__get_sim_playlist(dom)
+		self.song_num, self.song_list = self.__get_song_list(dom)
 
-	def _get_playlist_info(self,dom_tree):
+	def __get_playlist_name(self,dom_tree):
+		playlist_name=''
+		try:
+			name_dom = dom_tree.xpath(u"//h2[@class='f-ff2 f-brk']")[0]
+			playlist_name = name_dom.text.encode('utf8')
+		except:
+			loggin.info('Parsing playlist_name error...')
+		return playlist_name
+
+	def __get_creator(self,dom_tree):
+		creator = ''
+		try:
+			creator_dom = dom_tree.xpath(u"//a[@class='s-fc7']")[0]
+			creator = creator_dom.attrib['href']
+			creator = creator[creator.index('=')+1:]
+		except:
+			logging.info('Parsing creator error...')
+		return creator
+
+	def __get_playlist_info(self,dom_tree):
 		favor_num = 0
 		share_num = 0
 		comment_num = 0
@@ -54,13 +77,13 @@ class Playlist:
 				comment_num = int(comment[comment.index('(')+1:-1])
 		return favor_num, share_num, comment_num
 
-	def _get_play_times(self,dom_tree):
+	def __get_play_times(self,dom_tree):
 		play_times = 0
 		times_dom = dom_tree.xpath(u"//strong[@class='s-fc6 j-play-count']")[0]
 		play_times = int(times_dom.text)
 		return play_times
 	
-	def _get_tags_desc(self,dom_tree):
+	def __get_tags_desc(self,dom_tree):
 		tags = []
 		desc = ''
 		tags_dom = dom_tree.xpath(u"//div[@class='tags f-cb']")[0]
@@ -74,10 +97,13 @@ class Playlist:
 				desc += text.encode('utf8')
 		except:
 			logging.info("There's no description for playlist")
-			pass
+
+		if not desc:
+			desc = 'none'
+
 		return tags, desc
 
-	def _get_song_list(self,dom_tree):
+	def __get_song_list(self,dom_tree):
 		song_num=0
 		song_list = []
 		
@@ -90,11 +116,23 @@ class Playlist:
 			song_list.append(song_dom.attrib['data-id'])
 	
 		return song_num,song_list
+
+	def __get_sim_playlist(self,dom_tree):
+		sim_playlists = []
+		try:
+			sim_playlist_dom = dom_tree.xpath(u"//a[@class='sname f-fs1 s-fc0']")
+			for sub_ele in sim_playlist_dom:
+				sim_playlists.append(sub_ele.attrib['data-res-id'])
+		except:
+			logging.info('Get sim_playlist id error, pass')
+
+		return sim_playlists
 	
 	def data_in_string(self):
-		return "%s\t"*9%(self.playlist_id,self.favor_num,self.share_num,self.comment_num,','.join(self.tags),self.desc,self.play_times,self.song_num,','.join(self.song_list))	
+		return "%s\t"*12%(self.playlist_id,self.playlist_name,self.creator,self.favor_num,self.share_num,self.comment_num,','.join(self.tags),self.desc,self.play_times,','.join(self.sim_playlists),self.song_num,','.join(self.song_list))	
 
-def get_playlist_id(filepath):
+def crawl_playlist_info(filepath):
+	logging.info('Crawl playlist info from web >> begin')
 	with open(filepath,'rb') as fin:
 		for idx,line in enumerate(fin.readlines()):
 			line = line.strip().split('\t')
@@ -102,13 +140,22 @@ def get_playlist_id(filepath):
 			playlist_id = line[0]
 			playlist_url = wangyi_url_template%(href)
 			logging.info("Crawling playlist: %s #%s"%(playlist_url,idx))
-			playlist_page = get_page(playlist_url)
-			playlist = Playlist(playlist_id,playlist_page)
-			print playlist.data_in_string()
-			if idx>10:
-				break
+			try:
+				playlist_page = get_page(playlist_url)
+				if playlist_page :
+					try:
+						playlist = Playlist(playlist_id,playlist_page)
+						print playlist.data_in_string()
+					except Exception, e:
+						logging.error('Parsing playlist: %s failed..'%(playlist_url))
+						logging.error(e)
+				else:
+					logging.error("Get playlist page failed...")
+			except:
+				logging.error("Crawl playlist: %s filed..."%(playlist_id))
+	logging.info('Crawl playlist info from web >> complete')
 
 if __name__=="__main__":
 	args = sys.argv
 	playlist_file_path=args[1]
-	get_playlist_id(playlist_file_path)
+	crawl_playlist_info(playlist_file_path)

@@ -58,7 +58,10 @@ def get_all_song():
 	for (playlist_id,song_list) in playlist_songs.items():
 		for song_id in song_list:
 			song_url = song_url_template%(song_id)
-			print song_url
+			song_page = get_page(song_url)
+			song = Song(song_id,song_page)
+			print song
+			break
 		break
 
 if __name__=="__main__":
