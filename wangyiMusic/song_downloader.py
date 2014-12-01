@@ -5,7 +5,7 @@ from lxml import etree
 from collections import *
 import logging
 
-logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
+logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.song_downloader')
 
 def get_page(url):
 	'''
@@ -27,7 +27,7 @@ def get_page(url):
 class Song:
 	def __init__(self,song_id,html=''):
 		self.song_id = song_id
-		dom = etree.HTML(html)
+		dom = etree.HTML(html.decode('utf8'))
 		self.html = html
 		self.song_name,self.singer_id,self.singer_name,self.album_id,self.album_name = self.__get_basic_info(dom)
 		self.song_lrc = self.__get_lrc(dom)
@@ -57,18 +57,22 @@ class Song:
 		return song_name,singer_id,singer_name,album_id,album_name
 
 	def __get_lrc(self,dom_tree):
-		song_lrc = ''
+		song_lrc = []
 		try:
 			lrc_dom = dom_tree.xpath(u"//div[@class='bd bd-open f-brk f-ib']")[0]
 			for lrc in lrc_dom.itertext():
-				song_lrc += lrc.strip().encode('utf8')
+				lrc = lrc.strip()
+				if lrc=='' or lrc==u'展开':
+					continue
+				song_lrc.append(lrc.encode('utf8'))
 		except:
 			logging.info("There's no lrc for song:%s"%(self.song_id))
 		
-		if "暂时没有歌词" in song_lrc:
-			song_lrc = 'none'
+		ret_song_lrc = ';'.join(song_lrc)
+		if "暂时没有歌词" in ret_song_lrc or '无歌词' in ret_song_lrc:
+			ret_song_lrc = 'none'
 
-		return song_lrc
+		return ret_song_lrc
 
 	def __get_sim_song(self,dom_tree):
 		song_list = []
@@ -90,31 +94,50 @@ def get_playlists(filepath):
 			playlist_songs[playlist_id]=song_list
 	return playlist_songs
 
+def get_songs_from_file(playlist_info_file):
+	songs = set()
+	with open(playlist_info_file,'rb') as fin:
+		for line in fin.readlines():
+			line = line.strip().split('\t')
+			song_list = line[-1].split(',')
+			songs.update(set(song_list))
+	return songs
+
 song_url_template = "http://music.163.com/song?id=%s"
 
-def get_all_song(playlist_info_file):
+def get_all_song_fromdir(playlist_info_dir):
+	logging.info("Get song_id(s) from dir:%s"%(playlist_info_dir))
+	all_songs = set()
+	playlist_info_files = os.listdir(playlist_info_dir)
+	for playlist_info_file in playlist_info_files:
+		songs = get_songs_from_file(os.path.join(playlist_info_dir,playlist_info_file))
+		all_songs.update(songs)
+	return all_songs
+
+def song_downloader(filepath,get_method=get_all_song_fromdir):
 	logging.info("Song info crawling process >> begin")
-	playlist_songs = get_playlists(playlist_info_file)
-	for (playlist_id,song_list) in playlist_songs.items():
-		for song_id in song_list:
-			song_url = song_url_template%(song_id)
-			logging.info('Crawl song page of song:%s url:%s'%(song_id,song_url))
-			try:
-				song_page = get_page(song_url)
-				if song_page :
-					try:
-						song = Song(song_id,song_page)
-						print song.data_in_string()
-					except Exception,e:
-						logging.error('Parsing song page:%s failed...'%(song_url))
-				else:
-					logging.error("Get song page failed...")
-			except Exception, e:
-				logging.error("Crawl song page %s Failed"%(song_id))
-		break
+	all_songs = get_method(filepath)
+	songs_count = len(all_songs)
+	for idx,song_id in enumerate(all_songs):
+		song_url = song_url_template%(song_id)
+		logging.info('Crawl song page of song:%s url:%s #%s of %s'%(song_id,song_url,idx+1,songs_count))
+		try:
+			song_page = get_page(song_url)
+			if song_page :
+				try:
+					song = Song(song_id,song_page)
+					print song.data_in_string()
+				except Exception,e:
+					logging.error('Parsing song page:%s failed...'%(song_url))
+			else:
+				logging.error("Get song page failed...")
+		except Exception, e:
+			logging.error("Crawl song page %s Failed"%(song_id))
+	
 	logging.info("Song info crawling process >> complete")
 
+
 if __name__=="__main__":
-	args = sys.argv
-	playlist_info_file = args[1]
-	get_all_song(playlist_info_file)
+	#song_downloader('./data/playlist_basic_info')
+	song_downloader('./data/playlist_basic_info/playlist.basic_info_1round_20141129',get_songs_from_file)
+	

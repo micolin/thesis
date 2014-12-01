@@ -45,8 +45,9 @@ class Playlist:
 		try:
 			name_dom = dom_tree.xpath(u"//h2[@class='f-ff2 f-brk']")[0]
 			playlist_name = name_dom.text.encode('utf8')
-		except:
-			loggin.info('Parsing playlist_name error...')
+		except Exception, e:
+			loggin.error('Parsing playlist_name error...')
+			logging.error(e)
 		return playlist_name
 
 	def __get_creator(self,dom_tree):
@@ -55,8 +56,9 @@ class Playlist:
 			creator_dom = dom_tree.xpath(u"//a[@class='s-fc7']")[0]
 			creator = creator_dom.attrib['href']
 			creator = creator[creator.index('=')+1:]
-		except:
-			logging.info('Parsing creator error...')
+		except Exception, e:
+			logging.error('Parsing creator error...')
+			logging.error(e)
 		return creator
 
 	def __get_playlist_info(self,dom_tree):
@@ -79,27 +81,40 @@ class Playlist:
 
 	def __get_play_times(self,dom_tree):
 		play_times = 0
-		times_dom = dom_tree.xpath(u"//strong[@class='s-fc6 j-play-count']")[0]
-		play_times = int(times_dom.text)
+		try:
+			times_dom = dom_tree.xpath(u"//strong[@class='s-fc6 j-play-count']")[0]
+			play_times = int(times_dom.text)
+		except Exception,e:
+			logging.error('Parse play times error..')
+			logging.error(e)
 		return play_times
 	
 	def __get_tags_desc(self,dom_tree):
 		tags = []
 		desc = ''
-		tags_dom = dom_tree.xpath(u"//div[@class='tags f-cb']")[0]
-		for child in tags_dom.getchildren():
-			if child.tag == 'a':
-				tag = child.getchildren()[0].text.encode('utf8')
-				tags.append(tag)
+		try:
+			tags_dom = dom_tree.xpath(u"//div[@class='tags f-cb']")[0]
+			for child in tags_dom.getchildren():
+				if child.tag == 'a':
+					tag = child.getchildren()[0].text.encode('utf8')
+					tags.append(tag)
+		except Exception,e:
+			logging.info("There's no tags for playlist")
+			logging.error(e)
+			
 		try:
 			desc_dom = dom_tree.xpath(u"//p[@class='intr f-brk']")[0]
 			for text in desc_dom.itertext():
 				desc += text.encode('utf8')
-		except:
+		except Exception,e:
 			logging.info("There's no description for playlist")
+			logging.error(e)
 
 		if not desc:
 			desc = 'none'
+
+		if len(tags)==0:
+			tags = ['none']
 
 		return tags, desc
 
@@ -123,8 +138,9 @@ class Playlist:
 			sim_playlist_dom = dom_tree.xpath(u"//a[@class='sname f-fs1 s-fc0']")
 			for sub_ele in sim_playlist_dom:
 				sim_playlists.append(sub_ele.attrib['data-res-id'])
-		except:
-			logging.info('Get sim_playlist id error, pass')
+		except Exception,e:
+			logging.error('Get sim_playlist id error, pass')
+			logging.error(e)
 
 		return sim_playlists
 	
