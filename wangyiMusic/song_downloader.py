@@ -140,7 +140,6 @@ def song_downloader(filepath,get_method=get_all_song_fromdir):
 				logging.error("Get song page failed...")
 		except Exception, e:
 			logging.error("Crawl song page %s Failed"%(song_id))
-		break
 	
 	logging.info("Song info crawling process >> complete")
 
