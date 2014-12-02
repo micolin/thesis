@@ -5,7 +5,6 @@ from lxml import etree
 from collections import *
 import logging
 
-logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.song_downloader')
 
 def get_page(url):
 	'''
@@ -114,6 +113,14 @@ def get_all_song_fromdir(playlist_info_dir):
 		all_songs.update(songs)
 	return all_songs
 
+def get_songs_from_idfile(song_id_file):
+	songs = set()
+	with open(song_id_file,'r') as fin:
+		for line in fin.readlines():
+			song_id = line.strip()
+			songs.add(song_id)
+	return songs
+
 def song_downloader(filepath,get_method=get_all_song_fromdir):
 	logging.info("Song info crawling process >> begin")
 	all_songs = get_method(filepath)
@@ -133,11 +140,23 @@ def song_downloader(filepath,get_method=get_all_song_fromdir):
 				logging.error("Get song page failed...")
 		except Exception, e:
 			logging.error("Crawl song page %s Failed"%(song_id))
+		break
 	
 	logging.info("Song info crawling process >> complete")
 
 
 if __name__=="__main__":
 	#song_downloader('./data/playlist_basic_info')
-	song_downloader('./data/playlist_basic_info/playlist.basic_info_1round_20141129',get_songs_from_file)
-	
+	#song_downloader('./data/playlist_basic_info/playlist.basic_info_1round_20141129',get_songs_from_file)
+	args = sys.argv
+	file_path = args[1]
+	get_method = args[2]
+	log_file = args[3]
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='/data/micolin/thesis-git/wangyiMusic/log/'+log_file)
+	if get_method == 'from_file':
+		song_downloader(file_path,get_songs_from_file)
+	elif get_method == 'from_dir':
+		song_downloader(file_path,get_all_song_fromdir)
+	elif get_method == 'from_idfile':
+		song_downloader(file_path,get_songs_from_idfile)
+		
