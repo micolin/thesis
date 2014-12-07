@@ -43,3 +43,18 @@ Column Annotation:
 	#6 		album_name
 	#7		song_lrc
 	#8		sim_song_list
+
+=============================================================
+Filename: user_info_*
+Desc: Infomation of user at wangyi music
+Column Annotation:
+	#1		user_id
+	#2		user_name
+	#3		gender
+	#4		area(province)
+	#5		expertTag	
+	#6		action (events, follows, fans)
+	#7		listenedSongs
+	#8		fans
+	#9		follows
+	#10		favor_playlist

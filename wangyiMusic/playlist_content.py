@@ -122,10 +122,12 @@ class Playlist:
 		song_num=0
 		song_list = []
 		
+		#Get amount of song
 		num_dom = dom_tree.xpath(u"//span[@class='sub s-fc3 j-track-count']")[0]
 		song_num_text = num_dom.text.encode('utf8')
 		song_num = int(song_num_text[:song_num_text.index('首')])
 		
+		#Get songs id
 		songlist_dom = dom_tree.xpath(u"//tbody[@id='m-song-list-module']")[0]
 		for song_dom in songlist_dom.getchildren():
 			song_list.append(song_dom.attrib['data-id'])
@@ -148,12 +150,18 @@ class Playlist:
 		return "%s\t"*12%(self.playlist_id,self.playlist_name,self.creator,self.favor_num,self.share_num,self.comment_num,','.join(self.tags),self.desc,self.play_times,','.join(self.sim_playlists),self.song_num,','.join(self.song_list))	
 
 def crawl_playlist_info(filepath):
+	'''
+	@func: main process of playlist spider
+	@params[in] filepath: path of playlist_dict 
+	'''
 	logging.info('Crawl playlist info from web >> begin')
 	with open(filepath,'rb') as fin:
 		for idx,line in enumerate(fin.readlines()):
 			line = line.strip().split('\t')
 			href = line[1]
 			playlist_id = line[0]
+
+			#Combine url
 			playlist_url = wangyi_url_template%(href)
 			logging.info("Crawling playlist: %s #%s"%(playlist_url,idx))
 			try:
@@ -167,8 +175,9 @@ def crawl_playlist_info(filepath):
 						logging.error(e)
 				else:
 					logging.error("Get playlist page failed...")
-			except:
+			except Exception,e:
 				logging.error("Crawl playlist: %s filed..."%(playlist_id))
+				logging.error(e)
 	logging.info('Crawl playlist info from web >> complete')
 
 if __name__=="__main__":

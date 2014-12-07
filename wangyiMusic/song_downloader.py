@@ -5,7 +5,6 @@ from lxml import etree
 from collections import *
 import logging
 
-
 def get_page(url):
 	'''
 	@params[in] url 
@@ -33,9 +32,11 @@ class Song:
 		self.sim_songs = self.__get_sim_song(dom)
 
 	def __get_basic_info(self,dom_tree):
+		#Get song name
 		name_dom = dom_tree.xpath(u"//em[@class='f-ff2']")[0]
 		song_name = name_dom.text.encode('utf8')
 		
+		#Get singer's id and name
 		singer_dom = dom_tree.xpath(u"//a[@class='s-fc7']|//span[@class='s-fc7']")
 		singer_id = 'none'
 		try:
@@ -46,6 +47,7 @@ class Song:
 
 		singer_name = singer_dom[0].text.encode('utf8')
 		
+		#Get album's id and name
 		album_id = 'none'
 		try:
 			album_href = singer_dom[1].attrib['href']
@@ -53,6 +55,7 @@ class Song:
 		except:
 			logging.info("There's no id for album")
 		album_name = singer_dom[1].text.encode('utf8')
+
 		return song_name,singer_id,singer_name,album_id,album_name
 
 	def __get_lrc(self,dom_tree):
@@ -83,6 +86,7 @@ class Song:
 	def data_in_string(self):
 		return "%s\t"*8%(self.song_id,self.song_name,self.singer_id,self.singer_name,self.album_id,self.album_name,self.song_lrc,','.join(self.sim_songs))
 
+#abandon
 def get_playlists(filepath):
 	playlist_songs = {}
 	with open(filepath,'rb') as fin:
@@ -94,6 +98,10 @@ def get_playlists(filepath):
 	return playlist_songs
 
 def get_songs_from_file(playlist_info_file):
+	'''
+	@func: playlist_info_file: path of playlist_info file
+	@return: set of song id
+	'''
 	songs = set()
 	with open(playlist_info_file,'rb') as fin:
 		for line in fin.readlines():
@@ -105,6 +113,9 @@ def get_songs_from_file(playlist_info_file):
 song_url_template = "http://music.163.com/song?id=%s"
 
 def get_all_song_fromdir(playlist_info_dir):
+	'''
+	
+	'''
 	logging.info("Get song_id(s) from dir:%s"%(playlist_info_dir))
 	all_songs = set()
 	playlist_info_files = os.listdir(playlist_info_dir)
@@ -114,6 +125,10 @@ def get_all_song_fromdir(playlist_info_dir):
 	return all_songs
 
 def get_songs_from_idfile(song_id_file):
+	'''
+	@params[in] song_id_file: filepath of song_id list
+	@return[out] set of song id
+	'''
 	songs = set()
 	with open(song_id_file,'r') as fin:
 		for line in fin.readlines():
@@ -122,6 +137,11 @@ def get_songs_from_idfile(song_id_file):
 	return songs
 
 def song_downloader(filepath,get_method=get_all_song_fromdir):
+	'''
+	@func:
+	@params[in]	filepath: path of song_id list
+	@params[in] get_method:	get_all_song_fromdir | get_songs_from_file | get_songs_from_idfile
+	'''
 	logging.info("Song info crawling process >> begin")
 	all_songs = get_method(filepath)
 	songs_count = len(all_songs)
