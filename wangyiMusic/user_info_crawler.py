@@ -223,4 +223,4 @@ def main(user_seed,max_user_num,record_per_file,output_dir):
 
 if __name__=='__main__':
 	user_seed = ['13979389','34894816']
-	main(user_seed,1000,100,'./data/user_info/')
+	main(user_seed,100000,10000,'./data/user_info/')
