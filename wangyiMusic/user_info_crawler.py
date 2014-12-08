@@ -183,6 +183,12 @@ def output2file(filepath,data):
 			fin.write(user.data_with_string()+'\n')
 
 def main(user_seed,max_user_num,record_per_file,output_dir):
+	'''
+	@params[in] user_seed: list,list of user_id as seed
+	@params[in]	max_user_num: int,target amount of user
+	@params[in] record_per_file: int,amount of user per file
+	@params[in] output_dir: path, dir of output
+	'''
 	logging.info("User infomation crawling >> begin")
 	user_bucket = set()		#Store uncaught user_id
 	cached_user_set = set()	#Store downloaded user_id
