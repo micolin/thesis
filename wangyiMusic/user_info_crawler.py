@@ -6,6 +6,7 @@ import logging
 import json
 
 logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.user_downloader')
+#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 
 class User:
 	def __init__(self,user_id):
@@ -181,6 +182,31 @@ def output2file(filepath,data):
 	with open(filepath,'w') as fin:
 		for user in data:
 			fin.write(user.data_with_string()+'\n')
+
+def load_dowloaded_user(filepath):
+	logging.info('Loading userid from path:%s.'%(filepath))
+	all_userid = set()
+	if os.path.isdir(filepath):
+		logging.info('%s is dir.'%(filepath))
+		path_list = os.listdir(filepath)
+		for path in path_list:
+			full_path = os.path.join(filepath,path)
+			id_set = get_userid(full_path)
+			all_userid.update(id_set)
+	else:
+		logging.info('%s is file.'%(filepath))
+		id_set = get_userid(filepath)
+		all_userid.update(id_set)
+	return all_userid
+
+def get_userid(filepath):
+	all_user = set()
+	with open(filepath,'r') as fin:
+		for line in fin.readlines():
+			line = line.strip().split('\t')
+			user_id = line[0]
+			all_user.add(user_id)
+	return all_user
 
 def main(user_seed,max_user_num,record_per_file,output_dir):
 	'''
