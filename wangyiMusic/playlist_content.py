@@ -5,8 +5,6 @@ from collections import *
 from lxml import etree
 import logging
 
-logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.crawl_content')
-#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 
 def get_page(url):
 	'''
@@ -181,6 +179,8 @@ def crawl_playlist_info(filepath):
 	logging.info('Crawl playlist info from web >> complete')
 
 if __name__=="__main__":
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.crawl_content')
+	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	args = sys.argv
 	playlist_file_path=args[1]
 	crawl_playlist_info(playlist_file_path)

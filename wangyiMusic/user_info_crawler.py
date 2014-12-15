@@ -5,9 +5,6 @@ from lxml import etree
 import logging
 import json
 
-logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.user_downloader')
-#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
-
 class User:
 	def __init__(self,user_id):
 		self.user_id = user_id
@@ -208,7 +205,7 @@ def get_userid(filepath):
 			all_user.add(user_id)
 	return all_user
 
-def main(user_seed,max_user_num,record_per_file,output_dir):
+def user_downloader(user_seed,max_user_num,record_per_file,output_dir,existed_user_set=set()):
 	'''
 	@params[in] user_seed: list,list of user_id as seed
 	@params[in]	max_user_num: int,target amount of user
@@ -218,6 +215,7 @@ def main(user_seed,max_user_num,record_per_file,output_dir):
 	logging.info("User infomation crawling >> begin")
 	user_bucket = set()		#Store uncaught user_id
 	cached_user_set = set()	#Store downloaded user_id
+	cached_user_set.update(existed_user_set)
 	
 	output_file_idx = 0		#Use to split users to different file
 	output_data = []		#Cache user objects
@@ -251,8 +249,16 @@ def main(user_seed,max_user_num,record_per_file,output_dir):
 		if total_count >= max_user_num:
 			break
 
+	#Save remain data
+	if output_data:
+		output_path = os.path.join(output_dir,output_filename_temp%(output_file_idx))
+		output2file(output_path,output_data)
+
 	logging.info("User infomation crawling >> complete")
 
 if __name__=='__main__':
-	user_seed = ['13979389','34894816']
-	main(user_seed,100000,10000,'./data/user_info/')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.user_downloader')
+	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
+	user_seed = ['37316751','233041','98971']
+	existed_user_set = load_dowloaded_user('./data/user_info/')
+	user_downloader(user_seed,100000,10000,'./data/user_info_2nd',existed_user_set)

@@ -165,8 +165,6 @@ def song_downloader(filepath,get_method=get_all_song_fromdir):
 
 
 if __name__=="__main__":
-	#song_downloader('./data/playlist_basic_info')
-	#song_downloader('./data/playlist_basic_info/playlist.basic_info_1round_20141129',get_songs_from_file)
 	args = sys.argv
 	file_path = args[1]
 	get_method = args[2]
