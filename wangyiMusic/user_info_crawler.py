@@ -154,7 +154,7 @@ class User:
 	def data_with_string(self):
 		return "%s\t"*10%(self.user_id,self.name,self.gender,self.area,self.tags,self.action,','.join(list(self.listenedSongs)),','.join(list(self.fans)),','.join(list(self.follows)),','.join(list(self.collections)))
 
-def get_page(url,refer_url):
+def get_page(url,refer_url,sleepTime=0):
 	'''
 	@params[in] url 
 	@return[out] page

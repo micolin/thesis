@@ -8,7 +8,7 @@ from song_downloader import get_songs_from_idfile
 from user_info_crawler import get_page
 
 def get_song_comment(song_id):
-	limit = 300
+	limit = 50
 	song_comment_api = 'http://music.163.com/api/resource/comments/R_SO_4_%s/?rid=R_SO_4_%s&offset=%s&total=false&limit=%s'
 	song_comments = []
 	st_idx = 0
@@ -28,7 +28,8 @@ def get_song_comment(song_id):
 				pass
 			comm_content = comment['content'].encode('utf8').strip()
 			comm_content = comm_content.replace('\n',';')
-			song_comments.append(comm_user,replied_user,comm_content)
+			comm_content = comm_content.replace('\t',';')
+			song_comments.append((comm_user,replied_user,comm_content))
 		more = comment_json['more']
 		if more:
 			st_idx+=limit
@@ -36,20 +37,41 @@ def get_song_comment(song_id):
 			break
 	return song_comments
 
-def comment_downloader(filepath):
+def load_crawled_songid(filepath):
+	songid_set = set()
+	with open(filepath,'rb') as fin:
+		for line in fin.readlines():
+			line = line.strip().split('\t')
+			songid_set.add(line[0])
+
+	return songid_set
+
+def comment_downloader(filepath,crawled_filepath=None):
 	logging.info("Song info crawling process >> begin")
 	all_songs = get_songs_from_idfile(filepath)
+	crawled_songids = set()
+	if not crawled_filepath is None:
+		crawled_songids = load_crawled_songid(crawled_filepath)
 	songs_count = len(all_songs)
 	for idx,song_id in enumerate(all_songs):
 		logging.info('Crawl comment of song:%s #%s of %s'%(song_id,idx+1,songs_count))
+		if song_id in crawled_songids:
+			logging.info("Comment of song%s is crawled. Pass.."%(song_id))
+			continue
 		song_comments = get_song_comment(song_id)
-		if idx>10:
-			break
+		for comment in song_comments:
+			print "%s\t%s\t%s\t%s"%(song_id,comment[0],comment[1],comment[2])
+	logging.info("Song info crawling process >> complete")
 
 if __name__=="__main__":
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/'+log_file)
+	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	args = sys.argv
 	file_path = args[1]
-	#log_file = args[2]
-	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='/data/micolin/thesis-git/wangyiMusic/log/'+log_file)
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
-	#comment_downloader(file_path)
+	log_file = args[2]
+	try:
+		crawled_file = args[3]
+		comment_downloader(file_path,crawled_file)
+	except:
+		logging.info("There's no crawled file, start from begining...")
+		comment_downloader(file_path)

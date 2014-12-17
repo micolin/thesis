@@ -5,6 +5,7 @@ from lxml import etree
 import logging
 import json
 from datetime import date
+import time
 from user_info_crawler import get_page
 
 class User:
@@ -48,6 +49,8 @@ def main():
 		for idx,userid in enumerate(userid_set):
 			logging.info('Getting listened songs of user:%s\t#%s / %s'%(userid,idx+1,tot_num))
 			fin.write(User(userid).data_in_string()+'\n')
+			if idx%100 == 0:
+				time.sleep(3)
 	logging.info("Get user's listened song >> complete")
 
 if __name__=="__main__":
