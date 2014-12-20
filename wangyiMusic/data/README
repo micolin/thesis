@@ -58,3 +58,10 @@ Column Annotation:
 	#8		fans
 	#9		follows
 	#10		favor_playlist
+
+=============================================================
+Filename: user_favor_*
+Desc: User's favor song, collected in favor_song_playlist
+Column Annotation:
+	#1		user_id
+	#2 		favor_song_list(splited with ',')
