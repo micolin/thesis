@@ -50,7 +50,6 @@ def song_to_db(filedir):
 			filepath = os.path.join(filedir,filepath)
 			logging.info('Saving file:%s'%(filepath))
 			file2db(collection,filepath)
-	db.close()
 
 def user_to_db(filedir):
 	db = connect_to_db()
@@ -84,7 +83,6 @@ def user_to_db(filedir):
 			filepath = os.path.join(filedir,filepath)
 			logging.info('Saving file:%s'%(filepath))
 			file2db(collection,filepath)
-	db.close()
 
 def playlist_to_db(filedir):
 	db = connect_to_db()
@@ -116,32 +114,36 @@ def playlist_to_db(filedir):
 			filepath = os.path.join(filedir,filepath)
 			logging.info("Saving file:%s"%(filedir))
 			file2db(collection,filepath)
-	db.close()
+
+def user_favor_to_db(filedir):
+	db = connect_to_db()
+	inputfile = os.path.basename(filedir)
+	file_date = inputfile.split('_')[-1]
+	collection = db['user_favor_'+file_date]
+	
+	def file2db(collection,filepath):
+		with open(filepath,'rb') as fin:
+			for idx,line in enumerate(fin.readlines()):
+				data = {}
+				line = line.strip().split('\t')
+				data['_id'] = line[0]
+				try:
+					data['favor_songs'] = line[1]
+				except:
+					data['favor_songs'] = None
+				collection.insert(data)
+	
+	logging.info("Saving file:%s"%(input_dir))
+	file2db(collection,filedir)
 
 if __name__=="__main__":
 	args = sys.argv
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
-	func = args[1]
-	if func == 'playlist':
-		input_dir = '/data/micolin/thesis-git/wangyiMusic/data/playlist_basic_info/playlist.basic_info_all'
-		try:
-			input_dir = args[2]
-		except:
-			pass
-		playlist_to_db(input_dir)
-	elif func == 'song':
-		input_dir = '/data/micolin/thesis-git/wangyiMusic/data/song_info'
-		try:
-			input_dir = args[2]
-		except:
-			pass
-		song_to_db(input_dir)
-	elif func == 'user':
-		input_dir = '/data/micolin/thesis-git/wangyiMusic/data/user_info'
-		try:
-			input_dir = args[2]
-		except:
-			pass
-		user_to_db(input_dir)
-	else:
-		logging.info("There's no such function, retry")
+	job = args[1]
+	try:
+		func = globals()[job]
+		input_dir = args[2]
+		func(input_dir)
+	except Exception,e:
+		logging.error("Error occur. Please check.")
+		logging.error(e)
