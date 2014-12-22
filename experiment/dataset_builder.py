@@ -1,20 +1,8 @@
 #coidng=utf8
-import config
 import os,sys
-from collections import *
-from pymongo import Connection
 import logging
 import random
-
-def db_connection():
-	'''
-	@desc: get mongodb connection
-	@return[out] object of db connection
-	'''
-	logging.info('Connect to database @%s:%s'%(config.db_host,config.db_port))
-	conn = Connection(config.db_host,config.db_port)
-	db = conn.easyNetMusic
-	return db
+from storage import db_connection
 
 def select_uid_reservoir(filepath,max_num,database=None):
 	'''
@@ -61,6 +49,11 @@ def get_favorSong_with_id(userid,database=None,table_name='user_favor_20141215')
 	return favorSongs
 
 def build_dataset(filepath,max_num):
+	'''
+	@Desc: randomly select max_num of user for training and testing
+	@params[in] filepath: path of file include all user_id
+	@params[in] max_num: int, amount of selected users
+	'''
 	logging.info("Dataset building process >> Begin")
 	db = db_connection()
 	uid_list = select_uid_reservoir(filepath,max_num,db)
@@ -68,7 +61,7 @@ def build_dataset(filepath,max_num):
 		print "%s\t%s"%(uid,','.join(favor_songs))
 	logging.info("Dataset building process >> Complete")
 
-def split_dataset(filepath,train_prob=0.8):
+def split_dataset(filepath,train_prob=0.7):
 	'''
 	@Desc: split dataset into 2 parts: training-set and testing-set
 	@params[in] filepath: path of input file, with uid \t favor-songs
@@ -90,8 +83,8 @@ def split_dataset(filepath,train_prob=0.8):
 	
 	#Dumping training data and testing data
 	logging.info("Dumping training data and testing data to file")
-	train_data_output = os.path.join(os.path.dirname(filepath),os.path.basename(filepath)+'_train')
-	test_data_output = os.path.join(os.path.dirname(filepath),os.path.basename(filepath)+'_test')
+	train_data_output = os.path.join(os.path.dirname(filepath),os.path.basename(filepath)+'_train_'+str(train_prob))
+	test_data_output = os.path.join(os.path.dirname(filepath),os.path.basename(filepath)+'_test_'+str(train_prob))
 	with open(train_data_output,'w') as fin:
 		for uid,data in train_list.items():
 			fin.write("%s\t%s\n"%(uid,','.join(data)))
