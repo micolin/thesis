@@ -34,14 +34,20 @@ class RandomSelect(BaseModel):
 
 def main():
 	args = sys.argv
-	train_prob = float(args[1])
+	set_num = args[1]
+	train_prob = args[2]
 	rs_recommender = RandomSelect()
 	dataset = BaseDataSet()
-	dataset.build_data('./dataset/user_dataset_1w_train_'+str(train_prob),'./dataset/user_dataset_1w_test_'+str(train_prob))
+	file_template = './dataset/user_dataset_%sw_%s_%s'	#set_num,type,train_prob
+	train_file = file_template%(set_num,'train',train_prob)
+	test_file = file_template%(set_num,'test',train_prob)
+	dataset.build_data(train_file,test_file)
 	logging.info("Build dataset cost:%s",dataset.cost_time)
+	print "DataForTrain: %s"%(train_file)
+	print "DataForTest: %s"%(test_file)
 	print "Dataset train_set info: %s"%(dataset.get_train_info())
 	print "Dataset test_set info: %s"%(dataset.get_test_info())
-	for i in range(50,1000,50):
+	for i in range(1,201):
 		rs_recommender.recommend(dataset.train_data,list(dataset.all_songs),i)
 		logging.info("Train_prob:%s Recommend Top_n:%s cost:%s"%(train_prob,i,rs_recommender.get_time()))
 		print "Top_n:%s\tScores:%s"%(i,rs_recommender.score(dataset.test_data))

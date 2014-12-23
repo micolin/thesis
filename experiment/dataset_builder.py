@@ -109,6 +109,7 @@ def main():
 		train_prob = float(args[3])
 		logging.info("Training prop: %s"%(train_prob))
 		globals()[job](inputdir,train_prob)
+	
 
 if __name__=="__main__":
 	main()
