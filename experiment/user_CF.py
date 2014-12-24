@@ -5,14 +5,20 @@ from collections import *
 from models import BaseModel, BaseDataSet
 import numpy as np
 import logging
-import pickle
+import json
 
 class UserCF(BaseModel):
 	def __init__(self):
 		BaseModel.__init__(self)
 		self.user_similarity = {}	# {uid:{sim_id:similarity}}
 	
-	def build_user_similarity(self,uids,dump_file):
+	def build_user_similarity(self,uids,user_sim_file):
+		'''
+		@Desc: building user similarity matrix
+		@params[in] uids: {uid: [favor_songid,]}
+		@params[in] user_sim_file: path to save user_similarity matrix
+		@[output] user_similarity matrix to file
+		'''
 		time_st = time.time()
 
 		songs_uid_mapping = defaultdict(list)	#{songid:[uid,]}
@@ -37,18 +43,20 @@ class UserCF(BaseModel):
 				user_sim[uid][vid] = inter_num / np.sqrt(len(uids[uid])*len(uids[vid]))
 		self.user_similarity = user_sim
 		
-		#Dumping uu_matrix to file
-		output_file = open(dump_file,'wb')
-		pickle.dump(self.user_similarity,output_file)
-		output_file.close()
+		#Dumping user_similarity matrix to file
+		logging.info('Dumping user_similarity matrix to file:%s'%(user_sim_file))
+		data_in_json = json.dumps(self.user_similarity)
+		with open(user_sim_file,'wb') as fin:
+			fin.write(data_in_json)
+		logging.info('Dumping process done.')
 	
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
 	
-	def load_user_similarity(self,matrix_file):
+	def load_user_similarity(self,user_sim_file):
 		time_st = time.time()
-		input_file = open(matrix_file,'rb')
-		self.user_similarity = pickle.load(input_file)
+		input_file = open(user_sim_file,'rb')
+		self.user_similarity = json.loads(input_file.read())
 		input_file.close()
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
@@ -61,9 +69,9 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
-	uu_matrix_file = args[3]	# user-user simiarity matrix
 	dataset = BaseDataSet()
 	file_template = './dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
+	user_sim_file = './dataset/user_sim_%s_%s.json'%(set_level,train_prob)	# user-user simiarity matrix
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
 	dataset.build_data(train_file,test_file)
@@ -74,13 +82,13 @@ def main():
 	print "Dataset test_set info: %s"%(dataset.get_test_info())
 	
 	userCF_recommender = UserCF()
-	if os.path.exists(uu_matrix_file):
-		logging.info("File %s exists, loading user similarity matrix"%(uu_matrix_file))
-		userCF_recommender.load_user_similarity(uu_matrix_file)
+	if os.path.exists(user_sim_file):
+		logging.info("File %s exists, loading user similarity matrix"%(user_sim_file))
+		userCF_recommender.load_user_similarity(user_sim_file)
 		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
 	else:
-		logging.info("File %s doesn't exist, building user similarity matrix"%(uu_matrix_file))
-		userCF_recommender.build_user_similarity(dataset.train_data,uu_matrix_file)
+		logging.info("File %s doesn't exist, building user similarity matrix"%(user_sim_file))
+		userCF_recommender.build_user_similarity(dataset.train_data,user_sim_file)
 		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
 
 if __name__=="__main__":
