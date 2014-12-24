@@ -26,7 +26,7 @@ class Popularity(BaseModel):
 		self.popular_list = pop_list
 		recommend_list = [song[0] for song in pop_list[:n]]
 		for uid in uids.keys():
-			self.result[uid] = recommend_list
+			self.result[uid] = [song for song in recommend_list if song not in uids[uid]]
 				
 		time_end = time.time()
 		self.cost_time = time_end - time_begin
@@ -52,7 +52,7 @@ def main():
 	print "DataForTest: %s"%(test_file)
 	print "Dataset train_set info: %s"%(dataset.get_train_info())
 	print "Dataset test_set info: %s"%(dataset.get_test_info())
-	for i in range(1,201):
+	for i in range(100,110):
 		rs_recommender.recommend(dataset.train_data,i)
 		logging.info("Train_prob:%s Recommend Top_n:%s cost:%s"%(train_prob,i,rs_recommender.get_time()))
 		#logging.info("Top_10_song:%s"%(rs_recommender.get_poplist(10)))

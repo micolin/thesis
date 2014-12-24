@@ -1,6 +1,7 @@
 #coding=utf8
 import os,sys
 import time
+from collections import *
 
 class BaseModel:
 	def __init__(self):
@@ -30,8 +31,8 @@ class BaseDataSet:
 	@Desc: used for Popularity Model and Random-Select Model
 	'''
 	def __init__(self):
-		self.train_data = {}
-		self.test_data = {}
+		self.train_data = {}	#{uid:[songid,]}
+		self.test_data = {}		#{uid:[songid,]}
 		self.all_songs = set()
 		self.cost_time = 0
 	
@@ -73,6 +74,7 @@ class MatDataSet(BaseDataSet):
 	def __init__(self):
 		BaseDataSet.__init__(self)	#Include member : train_data, test_data, cost_time, all_songs
 		self.us_matrix = []
+		self.song_user_dict = defaultdict(list)
 		self.user_dict = {}
 		self.song_dict = {}
 
@@ -82,8 +84,11 @@ class MatDataSet(BaseDataSet):
 		user_tot = len(self.train_data.keys())
 		song_tot = len(self.all_songs)
 		self.us_matrix = np.zeros((user_tot,song_tot),dtype='int8')
+		
+		#Record song-idx mapping
 		for idx,song in enumerate(self.all_songs):
 			self.song_dict[song] = idx
+		#Record user-idx mapping
 		for idx,uid in enumerate(self.train_data.iterkeys()):
 			self.user_dict[uid] = idx
 			for song in self.train_data[uid]:
