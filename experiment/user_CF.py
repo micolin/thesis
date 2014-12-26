@@ -3,7 +3,6 @@ import os,sys
 import time
 from collections import *
 from models import BaseModel, BaseDataSet
-import numpy as np
 import logging
 import json
 
@@ -54,6 +53,10 @@ class UserCF(BaseModel):
 		self.cost_time = time_ed - time_st
 	
 	def load_user_similarity(self,user_sim_file):
+		'''
+		@Desc: load user similarity matrix from file
+		@params[in] user_sim_file: file of user_similarity json 
+		'''
 		time_st = time.time()
 		input_file = open(user_sim_file,'rb')
 		self.user_similarity = json.loads(input_file.read())
@@ -61,8 +64,28 @@ class UserCF(BaseModel):
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
 		
-	def recommend(self,uids,user_dict,song_dict,user_n=5,top_n=0):
-		pass
+	def recommend(self,uids,user_k=5,top_n=0):
+		'''
+		@Desc: main process of recommendation
+		@params[in] uids: {uid:[favor_songid,]}
+		@params[in] user_k: use top_k similar user to recommend
+		@params[in] top_n: recommend top_n songs to user
+		'''
+		re_time_st = time.time()
+		for uid in uids.keys():
+			sim_users = self.user_similarity[uid]
+			top_n_users = sorted(sim_users.items(),key=lambda x:x[1],reverse=True)[:user_k]
+			candidate_songs = defaultdict(float)
+			for (vid,sim) in top_n_users:
+				for song in set(uids[vid])-set(uids[uid]):
+					candidate_songs[song]+=sim
+			if top_n:
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
+			else:
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)
+			self.result[uid] = [song[0] for song in top_n_songs]
+		re_time_ed = time.time()
+		self.cost_time = re_time_ed - re_time_st
 
 
 def main():
@@ -81,6 +104,12 @@ def main():
 	print "Dataset train_set info: %s"%(dataset.get_train_info())
 	print "Dataset test_set info: %s"%(dataset.get_test_info())
 	
+	#Record best scores
+	best_f_score = {'f_score':0}
+	best_precision = {'precision':0}
+	best_recall = {'recall':0}
+
+	#Initiate Recommender
 	userCF_recommender = UserCF()
 	if os.path.exists(user_sim_file):
 		logging.info("File %s exists, loading user similarity matrix"%(user_sim_file))
@@ -90,9 +119,35 @@ def main():
 		logging.info("File %s doesn't exist, building user similarity matrix"%(user_sim_file))
 		userCF_recommender.build_user_similarity(dataset.train_data,user_sim_file)
 		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
+	
+	for u_knn in range(1,101):
+		for top_n in range(1,101,2):
+			userCF_recommender.recommend(dataset.train_data,user_k=u_knn,top_n=top_n)
+			logging.info("Train_prob:%s User_n:%s Top_n:%s cost:%s"%(train_prob,u_knn,top_n,userCF_recommender.cost_time))
+			scores = userCF_recommender.score(dataset.test_data)
+			print "User_n:%s\tTop_n:%s\tScores:%s"%(u_knn,top_n,scores)
+
+			#Find Best Score
+			if scores['f_score'] > best_f_score['f_score']:
+				best_f_score = scores
+				best_f_score['user_k'] = u_knn
+				best_f_score['top_n'] = top_n
+			if scores['precision'] > best_precision['precision']:
+				best_precision = scores
+				best_precision['user_k']=u_knn
+				best_precision['top_n'] = top_n
+			if scores['recall'] > best_recall['recall']:
+				best_recall = scores
+				best_recall['user_k']=u_knn
+				best_recall['top_n'] = top_n
+	
+	print "Best_F_Score: %s"%(best_f_score)
+	print "Best_Precision: %s"%(best_precision)
+	print "Best_Recall: %s"%(best_recall)
 
 if __name__=="__main__":
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCf.log')
+	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	logging.info("UserCF >>>>>>>>>>>> Start")
 	main()
 	logging.info("UserCF >>>>>>>>>>>> Complete")

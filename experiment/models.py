@@ -2,12 +2,18 @@
 import os,sys
 import time
 from collections import *
+import json
 
 class BaseModel:
 	def __init__(self):
 		self.result = {}
 		self.cost_time = 0
 	def score(self,test_set):
+		'''
+		@Desc: measure precision, recall and f_score of recommendation
+		@params[in] test_set: BaseDataSet.test_data, {uid:[songid,]}
+		@return[out] score: dict, {precision:pre, recall: rc, f_score: f_s}
+		'''
 		hit = 0
 		predict_tot = 0
 		recall_tot = 0
@@ -28,15 +34,22 @@ class BaseModel:
 
 class BaseDataSet:
 	'''
-	@Desc: used for Popularity Model and Random-Select Model
+	@Desc: used for Popularity Model, Random-Select Model, userCF Model
 	'''
 	def __init__(self):
 		self.train_data = {}	#{uid:[songid,]}
 		self.test_data = {}		#{uid:[songid,]}
 		self.all_songs = set()
+		self.song_tag = {}		#
+		self.user_tag = {}
 		self.cost_time = 0
 	
 	def build_data(self,train_file,test_file):
+		'''
+		@Desc:
+		@params[in] train_file: path of training file
+		@params[in] test_file: path of testing file
+		'''
 		build_begin = time.time()
 		with open(train_file,'rb') as fin:
 			for line in fin.readlines():
@@ -53,6 +66,28 @@ class BaseDataSet:
 		build_end = time.time()
 		self.cost_time = build_end-build_begin
 	
+	def load_song_tag_distribution(self,song_tag_file):
+		'''
+		@Desc: load song_tag_distribution from file
+		@params[in] song_tag_file: filepath of song_tag distr file, json
+		'''
+		time_st = time.time()
+		with open(song_tag_file,'rb') as fin:
+			self.song_tag = json.loads(fin.read())
+		time_ed = time.time()
+		self.cost_time = time_ed - time_st
+
+	def load_user_tag_distribution(self,user_tag_file):
+		'''
+		@Desc: load user_tag_distribution from file
+		@params[in] user_tag_file: filepath of song_tag distr file, json
+		'''
+		time_st = time.time()
+		with open(user_tag_file,'rb') as fin:
+			self.user_tag = json.loads(fin.read())
+		time_ed = time.time()
+		self.cost_time = time_ed - time_st
+
 	def get_test_info(self):
 		size_list = [len(songs) for songs in self.test_data.values()]
 		info = {}
@@ -64,6 +99,7 @@ class BaseDataSet:
 	def get_train_info(self):
 		size_list = [len(songs) for songs in self.train_data.values()]
 		info = {}
+		info['song_tot'] = len(self.all_songs)
 		info['max'] = max(size_list)
 		info['min'] = min(size_list)
 		info['average'] = sum(size_list)/len(size_list)
