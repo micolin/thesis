@@ -2,19 +2,20 @@
 import os,sys
 import time
 from collections import *
+import numpy as np
 from models import BaseModel, BaseDataSet
 import logging,json
 
 class ItemCF(BaseModel):
 	def __init__(self):
 		BaseModel.__init__(self)
-		self.item_similarity = {} # {itemid:{sim_item:similarity}}
+		self.item_similarity = {} # {itemid:[(sim_item,similarity)]} sorted by similarity
 
 	def build_item_similarity(self,uids,item_sim_file):
 		'''
 		@Desc: building item similarity matrix
 		@params[in] uids: {uid: [favor_songid,]}
-		@params[in] item_sim_file: path to save user_similarity matrix
+		@params[in] item_sim_file: path to save item_similarity matrix
 		@[output] item_similarity json to file
 		'''
 		time_st = time.time()
@@ -35,9 +36,18 @@ class ItemCF(BaseModel):
 		item_sim = defaultdict(dict)
 		for song, sim_songs in song_interUser.items():
 			for sid, inter_num in sim_songs.iteritems():
-				item_sim[song][sid] = inter_num / np.sqrt(user_song[song]*user_song[sid])
-
-		print len(item_sim)
+				item_sim[song][sid] = inter_num / np.sqrt(song_user[song]*song_user[sid])
+		
+		logging.info('Sorting similarity result..')
+		self.item_similarity = defaultdict(list)
+		for song in item_sim.keys():
+			self.item_similarity[song] = sorted(item_sim[song].items(),key=lambda x:x[1],reverse=True)
+		#Dumping item_similarity matrix to file
+		logging.info('Dumping item_similarity matrix to file:%s'%(item_sim_file))
+		data_in_json = json.dumps(self.item_similarity)
+		with open(item_sim_file,'wb') as fin:
+			fin.write(data_in_json)
+		logging.info('Dumping process done.')
 
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st	
@@ -62,6 +72,18 @@ class ItemCF(BaseModel):
 		@params[in] top_n: recommend top_n songs to user
 		'''
 		time_st = time.time()
+		for uid in uids.keys():
+			candidate_songs = defaultdict(float)
+			for songid in uids[uid]:
+				for (sim_song,sim) in self.item_similarity[songid][:item_k]:
+					candidate_songs[sim_song] += sim
+
+			if top_n:
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
+			else:
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)
+			self.result[uid] = [song[0] for song in top_n_songs]
+
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st	
 	
@@ -80,6 +102,11 @@ def main():
 	print "Dataset train_set info: %s"%(dataset.get_train_info())
 	print "Dataset test_set info: %s"%(dataset.get_test_info())
 	
+	#Record best scores
+	best_f_score = {'f_score':0}
+	best_precision = {'precision':0}
+	best_recall = {'recall':0}
+
 	itemCF_recommender = ItemCF()
 	item_sim_file = './dataset/item_similarity_%s_%s.json'%(set_level,train_prob)
 	if os.path.exists(item_sim_file):
@@ -91,7 +118,15 @@ def main():
 		itemCF_recommender.build_item_similarity(dataset.train_data,item_sim_file)
 		logging.info("Load user_similarity cost: %s"%(itemCF_recommender.cost_time))
 	
-
+	#Recommendation
+	'''
+	for item_k in range(1,5):
+		for top_n in range(1,5):
+			itemCF_recommender.recommend(dataset.train_data,item_k=item_k,top_n=top_n)
+			logging.info("Train_prob:%s Item_k:%s Top_n:%s Cost:%s"%(train_prob,item_k,top_n,itemCF_recommender.cost_time))
+			scores = itemCF_recommender.score(dataset.test_data)
+			print "Item_k:%s\tTop_n:%s\tScores:%s"%(item_k,top_n,scores)
+	'''
 if __name__=="__main__":
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/itemCF.log')
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')

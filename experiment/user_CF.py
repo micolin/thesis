@@ -36,11 +36,10 @@ class UserCF(BaseModel):
 					except:
 						uid_interSong[user_list[u]][user_list[v]] = 1
 		
-		user_sim = defaultdict(dict)
+		self.user_similarity = defaultdict(dict)
 		for uid,sim_users in uid_interSong.items():
 			for vid,inter_num in sim_users.iteritems():
-				user_sim[uid][vid] = inter_num / np.sqrt(len(uids[uid])*len(uids[vid]))
-		self.user_similarity = user_sim
+				self.user_similarity[uid][vid] = inter_num / np.sqrt(len(uids[uid])*len(uids[vid]))
 		
 		#Dumping user_similarity matrix to file
 		logging.info('Dumping user_similarity matrix to file:%s'%(user_sim_file))
@@ -84,6 +83,7 @@ class UserCF(BaseModel):
 			else:
 				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)
 			self.result[uid] = [song[0] for song in top_n_songs]
+
 		re_time_ed = time.time()
 		self.cost_time = re_time_ed - re_time_st
 
@@ -120,6 +120,7 @@ def main():
 		userCF_recommender.build_user_similarity(dataset.train_data,user_sim_file)
 		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
 	
+	#Recommendation
 	for u_knn in range(1,101):
 		for top_n in range(1,101,2):
 			userCF_recommender.recommend(dataset.train_data,user_k=u_knn,top_n=top_n)
