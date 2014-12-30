@@ -2,6 +2,7 @@
 import os,sys
 import time
 from collections import *
+import numpy as np
 from models import BaseModel, BaseDataSet
 import logging
 import json
@@ -94,7 +95,7 @@ def main():
 	train_prob = args[2]
 	dataset = BaseDataSet()
 	file_template = './dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
-	user_sim_file = './dataset/user_sim_%s_%s.json'%(set_level,train_prob)	# user-user simiarity matrix
+	user_sim_file = './mid_data/user_sim_%s_%s.json'%(set_level,train_prob)	# user-user simiarity matrix
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
 	dataset.build_data(train_file,test_file)
@@ -121,7 +122,7 @@ def main():
 		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
 	
 	#Recommendation
-	for u_knn in range(1,101):
+	for u_knn in range(40,80):
 		for top_n in range(1,101,2):
 			userCF_recommender.recommend(dataset.train_data,user_k=u_knn,top_n=top_n)
 			logging.info("Train_prob:%s User_n:%s Top_n:%s cost:%s"%(train_prob,u_knn,top_n,userCF_recommender.cost_time))
@@ -147,7 +148,7 @@ def main():
 	print "Best_Recall: %s"%(best_recall)
 
 if __name__=="__main__":
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCf.log')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	logging.info("UserCF >>>>>>>>>>>> Start")
 	main()
