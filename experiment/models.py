@@ -99,7 +99,7 @@ class BaseDataSet:
 	def get_train_info(self):
 		size_list = [len(songs) for songs in self.train_data.values()]
 		info = {}
-		info['song_tot'] = len(self.all_songs)
+		info['songs_tot'] = len(self.all_songs)
 		info['max'] = max(size_list)
 		info['min'] = min(size_list)
 		info['average'] = sum(size_list)/len(size_list)

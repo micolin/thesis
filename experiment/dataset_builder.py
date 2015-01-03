@@ -4,7 +4,7 @@ import logging
 import random
 from storage import db_connection
 
-def select_uid_reservoir(filepath,max_num,database=None):
+def select_uid_reservoir(filepath,max_num,database,get_method):
 	'''
 	@desc: select userid for training and testing with reservoir simpling
 	@params[in] filepath : path of idfile
@@ -15,17 +15,17 @@ def select_uid_reservoir(filepath,max_num,database=None):
 	with open(filepath,'r') as fin:
 		for idx,line in enumerate(fin.readlines()):
 			uid = line.strip()
-			favor_songs = get_favorSong_with_id(uid,database)
+			favor_items = get_method(uid,database)
 			#Remove user who has no favor songs
-			if favor_songs == None or len(favor_songs) < 10:
+			if favor_items == None or len(favor_items) < 10:
 				continue
 			#Simpling
 			if len(selected_uid) < max_num:
-				selected_uid.append((uid,favor_songs))
+				selected_uid.append((uid,favor_items))
 			else:
 				rand = random.randint(0,idx)
 				if rand < max_num:
-					selected_uid[rand]=(uid,favor_songs)
+					selected_uid[rand]=(uid,favor_items)
 	return selected_uid
 
 def get_favorSong_with_id(userid,database=None,table_name='user_favor_20141215'):
@@ -48,7 +48,27 @@ def get_favorSong_with_id(userid,database=None,table_name='user_favor_20141215')
 		favorSongs = favorSongs.split(',')
 	return favorSongs
 
-def build_dataset(filepath,max_num):
+def get_favor_playlist_with_id(userid,database=None,table_name='user_info'):
+	'''
+	@desc: get user's favor playlists from database
+	@params[in] userid
+	@params[in] database: pymongo.db
+	@params[in] table_name: name of collection
+	'''
+	#Connect to db
+	db = database
+	if db ==None:
+		db = db_connection()
+	#select collection
+	collection = db[table_name]
+	#Get record from collection
+	record = collection.find_one({'_id':userid})
+	favor_playlist = record['favor_playlist']
+	if not favor_playlist == None:
+		favor_playlist = favor_playlist.split(',')
+	return favor_playlist
+
+def build_dataset(filepath,max_num,datatype):
 	'''
 	@Desc: randomly select max_num of user for training and testing
 	@params[in] filepath: path of file include all user_id
@@ -56,7 +76,12 @@ def build_dataset(filepath,max_num):
 	'''
 	logging.info("Dataset building process >> Begin")
 	db = db_connection()
-	uid_list = select_uid_reservoir(filepath,max_num,db)
+	get_method = None
+	if datatype == 'song':
+		get_method = get_favorSong_with_id
+	elif datatype == 'playlist':
+		get_method = get_favor_playlist_with_id
+	uid_list = select_uid_reservoir(filepath,max_num,db,get_method=get_method)
 	for uid,favor_songs in uid_list:
 		print "%s\t%s"%(uid,','.join(favor_songs))
 	logging.info("Dataset building process >> Complete")
@@ -103,8 +128,9 @@ def main():
 	logging.info("Input Dir: %s"%(inputdir))
 	if job == 'build_dataset':
 		max_num=int(args[3])
+		data_type = args[4]
 		logging.info("Max Num: %s"%(max_num))
-		globals()[job](inputdir,max_num)
+		globals()[job](inputdir,max_num,data_type)
 	elif job == 'split_dataset':
 		train_prob = float(args[3])
 		logging.info("Training prop: %s"%(train_prob))

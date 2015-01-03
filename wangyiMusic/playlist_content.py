@@ -4,7 +4,7 @@ import os,sys
 from collections import *
 from lxml import etree
 import logging
-
+from storage import connect_to_db
 
 def get_page(url):
 	'''
@@ -145,7 +145,23 @@ class Playlist:
 		return sim_playlists
 	
 	def data_in_string(self):
-		return "%s\t"*12%(self.playlist_id,self.playlist_name,self.creator,self.favor_num,self.share_num,self.comment_num,','.join(self.tags),self.desc,self.play_times,','.join(self.sim_playlists),self.song_num,','.join(self.song_list))	
+		return "%s\t"*12%(self.playlist_id,self.playlist_name,self.creator,self.favor_num,self.share_num,self.comment_num,','.join(self.tags),self.desc,self.play_times,','.join(self.sim_playlists),self.song_num,','.join(self.song_list))
+
+	def storage_to_db(self,db,table_name):
+		collection = db[table_name]
+		data = {}
+		data['_id'] = self.playlist_id
+		data['name'] = self.playlist_name
+		data['creator'] = self.creator
+		data['favor_num'] = self.favor_num
+		data['share_num'] = self.share_num
+		data['comment_num'] = self.comment_num
+		data['tags'] = ','.join(self.tags)
+		data['desc'] = self.desc
+		data['play_times'] = self.play_times
+		data['sim_playlists'] = ','.join(self.sim_playlists)
+		data['songs'] = ','.join(self.song_list)
+		collection.insert(data)
 
 def crawl_playlist_info(filepath):
 	'''
@@ -153,6 +169,8 @@ def crawl_playlist_info(filepath):
 	@params[in] filepath: path of playlist_dict 
 	'''
 	logging.info('Crawl playlist info from web >> begin')
+	db = connect_to_db()
+	table_name = 'playlist_info'
 	with open(filepath,'rb') as fin:
 		for idx,line in enumerate(fin.readlines()):
 			line = line.strip().split('\t')
@@ -167,7 +185,7 @@ def crawl_playlist_info(filepath):
 				if playlist_page :
 					try:
 						playlist = Playlist(playlist_id,playlist_page)
-						print playlist.data_in_string()
+						playlist.storage_to_db(db,table_name)
 					except Exception, e:
 						logging.error('Parsing playlist: %s failed..'%(playlist_url))
 						logging.error(e)
@@ -179,7 +197,7 @@ def crawl_playlist_info(filepath):
 	logging.info('Crawl playlist info from web >> complete')
 
 if __name__=="__main__":
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.crawl_content')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/log.crawl_content',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	args = sys.argv
 	playlist_file_path=args[1]

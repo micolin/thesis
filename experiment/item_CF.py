@@ -88,10 +88,7 @@ class ItemCF(BaseModel):
 						candidate_songs[sim_song] += sim
 						item_cnt +=1
 
-			if top_n:
-				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
-			else:
-				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)
+			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
 			self.result[uid] = [song[0] for song in top_n_songs]
 
 		time_ed = time.time()
@@ -101,8 +98,14 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
+	e_type = args[3]	#Experiment type: song or playlist
 	dataset = BaseDataSet()
-	file_template = './dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
+	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
+	item_sim_file = './song_dataset/mid_data/item_similarity_%s_%s.json'%(set_level,train_prob)
+	if e_type == 'playlist':
+		file_template = './pl_dataset/user_playlist_%s_%s_%s'	#set_num,type,train_prob
+		item_sim_file = './pl_dataset/mid_data/item_similarity_%s_%s.json'%(set_level,train_prob)
+		
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
 	dataset.build_data(train_file,test_file)
@@ -118,7 +121,6 @@ def main():
 	best_recall = {'recall':0}
 
 	itemCF_recommender = ItemCF()
-	item_sim_file = './mid_data/item_similarity_%s_%s.json'%(set_level,train_prob)
 	if os.path.exists(item_sim_file):
 		logging.info("File %s exists, loading item similarity matrix"%(item_sim_file))
 		itemCF_recommender.load_item_similarity(item_sim_file)
@@ -155,7 +157,7 @@ def main():
 	print "Best_Recall: %s"%(best_recall)
 
 if __name__=="__main__":
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/itemCF.log')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/itemCF.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	logging.info("ItemCF >>>>>>>>>>>> Start")
 	main()

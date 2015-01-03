@@ -12,3 +12,9 @@ def db_connection():
 	conn = Connection(config.db_host,config.db_port)
 	db = conn.easyNetMusic
 	return db
+
+def get_item_with_id(itemid,db,table_name):
+	#Select collection
+	collection = db[table_name]
+	record = collection.find_one({'_id':itemid})
+	return record

@@ -93,9 +93,14 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
+	e_type = args[3]	#Experiment type: song or playlist
 	dataset = BaseDataSet()
-	file_template = './dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
-	user_sim_file = './mid_data/user_sim_%s_%s.json'%(set_level,train_prob)	# user-user simiarity matrix
+	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
+	user_sim_file = './song_dataset/mid_data/user_sim_%s_%s.json'%(set_level,train_prob)	# user-user simiarity matrix
+	if e_type == 'playlist':
+		file_template = './pl_dataset/user_playlist_%s_%s_%s'	#set_num,type,train_prob
+		user_sim_file = './pl_dataset/mid_data/user_sim_%s_%s.json'%(set_level,train_prob)	# user-user simiarity matrix
+	
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
 	dataset.build_data(train_file,test_file)
@@ -148,7 +153,7 @@ def main():
 	print "Best_Recall: %s"%(best_recall)
 
 if __name__=="__main__":
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	logging.info("UserCF >>>>>>>>>>>> Start")
 	main()
