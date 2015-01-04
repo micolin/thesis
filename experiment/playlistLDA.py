@@ -120,6 +120,7 @@ class PlaylistLDA(BaseModel):
 			sorted_sim_playlist = sorted(sim_playlist_dict.items(),key=lambda x:x[1],reverse=True)[:top_pl_k]
 			self.playlist_similarity[pid]=sorted_sim_playlist
 			
+			#Dumping to file
 			data_in_json = json.dumps(sorted_sim_playlist)
 			fin.write("%s\t%s\n"%(pid,data_in_json))
 		
