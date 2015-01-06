@@ -10,23 +10,32 @@ import json
 class UserCF(BaseModel):
 	def __init__(self):
 		BaseModel.__init__(self)
-		self.user_similarity = {}	# {uid:{sim_id:similarity}}
+		self.user_similarity = defaultdict(list)	# {uid:{sim_id:similarity}}
 	
-	def build_user_similarity(self,uids,user_sim_file):
+	def build_user_similarity(self,uids,user_sim_file,top_user_k=500):
 		'''
 		@Desc: building user similarity matrix
 		@params[in] uids: {uid: [favor_songid,]}
 		@params[in] user_sim_file: path to save user_similarity matrix
-		@[output] user_similarity matrix to file
+		@params[in] top_user_k: int, number of sim_user to be kept in user_similarity matrix
+		@[out] user_similarity matrix to file
 		'''
+		#Load user-similarity matrix if user_sim_file exists
+		if os.path.exists(user_sim_file):
+			self.load_user_similarity(user_sim_file)
+			return
+		
+		#Build user-similarity matrix
 		time_st = time.time()
 
+		#Build song-uid mapping
 		songs_uid_mapping = defaultdict(list)	#{songid:[uid,]}
 		for uid,songs in uids.iteritems():
 			for song in songs:
 				songs_uid_mapping[song].append(uid)
 		
-		uid_interSong = defaultdict(dict)
+		#Build intetSong num matrix
+		uid_interSong = defaultdict(dict)		#{uid:{uid:inter_num}}
 		for song, user_list in songs_uid_mapping.iteritems():
 			for u in range(len(user_list)):
 				for v in range(len(user_list)):
@@ -37,20 +46,21 @@ class UserCF(BaseModel):
 					except:
 						uid_interSong[user_list[u]][user_list[v]] = 1
 		
-		self.user_similarity = defaultdict(dict)
+		fin = open(user_sim_file,'wb')
 		for uid,sim_users in uid_interSong.items():
+			sim_user_dict = defaultdict(float)
 			for vid,inter_num in sim_users.iteritems():
-				self.user_similarity[uid][vid] = inter_num / np.sqrt(len(uids[uid])*len(uids[vid]))
+				sim_user_dict[vid] = inter_num / np.sqrt(len(uids[uid])*len(uids[vid]))
+			#Sorting sim_user_dict
+			sorted_sim_user = sorted(sim_user_dict.items(), key=lambda x:x[1],reverse=True)[:top_user_k]
+			self.user_similarity[uid] = sorted_sim_user
+
+			#Dumping to file
+			data_in_json = json.dumps(sorted_sim_user)
+			fin.write('%s\t%s\n'%(uid,data_in_json))	
 		
-		#Dumping user_similarity matrix to file
-		logging.info('Dumping user_similarity matrix to file:%s'%(user_sim_file))
-		data_in_json = json.dumps(self.user_similarity)
-		with open(user_sim_file,'wb') as fin:
-			fin.write(data_in_json)
-		logging.info('Dumping process done.')
-	
 		time_ed = time.time()
-		self.cost_time = time_ed - time_st
+		logging.info("Calculate user-similarity cost: %s"%(time_ed-time_st))
 	
 	def load_user_similarity(self,user_sim_file):
 		'''
@@ -58,13 +68,16 @@ class UserCF(BaseModel):
 		@params[in] user_sim_file: file of user_similarity json 
 		'''
 		time_st = time.time()
-		input_file = open(user_sim_file,'rb')
-		self.user_similarity = json.loads(input_file.read())
-		input_file.close()
+		with open(user_sim_file,'rb') as fin:
+			for line in fin.readlines():
+				line = line.strip().split('\t')
+				uid = line[0]
+				sim_users = json.loads(line[1])
+				self.user_similarity[uid] = sim_users
 		time_ed = time.time()
-		self.cost_time = time_ed - time_st
+		logging.info("Load user-similarity cost: %s"%(time_ed-time_st))
 		
-	def recommend(self,uids,user_k=5,top_n=0):
+	def recommend(self,uids,user_k=5,top_n=10):
 		'''
 		@Desc: main process of recommendation
 		@params[in] uids: {uid:[favor_songid,]}
@@ -73,16 +86,12 @@ class UserCF(BaseModel):
 		'''
 		re_time_st = time.time()
 		for uid in uids.keys():
-			sim_users = self.user_similarity[uid]
-			top_n_users = sorted(sim_users.items(),key=lambda x:x[1],reverse=True)[:user_k]
+			top_n_users = self.user_similarity[uid][:user_k]
 			candidate_songs = defaultdict(float)
 			for (vid,sim) in top_n_users:
 				for song in set(uids[vid])-set(uids[uid]):
 					candidate_songs[song]+=sim
-			if top_n:
-				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
-			else:
-				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)
+			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
 			self.result[uid] = [song[0] for song in top_n_songs]
 
 		re_time_ed = time.time()
@@ -121,19 +130,12 @@ def main():
 
 	#Initiate Recommender
 	userCF_recommender = UserCF()
-	if os.path.exists(user_sim_file):
-		logging.info("File %s exists, loading user similarity matrix"%(user_sim_file))
-		userCF_recommender.load_user_similarity(user_sim_file)
-		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
-	else:
-		logging.info("File %s doesn't exist, building user similarity matrix"%(user_sim_file))
-		userCF_recommender.build_user_similarity(dataset.train_data,user_sim_file)
-		logging.info("Build user_similarity cost: %s"%(userCF_recommender.cost_time))
+	userCF_recommender.build_user_similarity(dataset.train_data,user_sim_file,top_user_k=500)	#Top_user_k represent keep top k sim_user to file
 	
 	#Recommendation
 	for user_k in range(40,80):
 		for top_n in range(1,101,2):
-			userCF_recommender.recommend(dataset.train_data,user_k=u_knn,top_n=top_n)
+			userCF_recommender.recommend(dataset.train_data,user_k=user_k,top_n=top_n)
 			logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,userCF_recommender.cost_time))
 			scores = userCF_recommender.score(dataset.test_data)
 			print "User_k:%s\tTop_n:%s\tScores:%s"%(user_k,top_n,scores)
@@ -159,7 +161,5 @@ def main():
 if __name__=="__main__":
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
-	logging.info("UserCF >>>>>>>>>>>> Start")
 	main()
-	logging.info("UserCF >>>>>>>>>>>> Complete")
 	

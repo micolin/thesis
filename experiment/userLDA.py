@@ -107,6 +107,7 @@ def main():
 	set_level = args[1]
 	train_prob = args[2]
 	topic_num = int(args[3])
+	e_type = args[4]	#e_type: song or playlist
 	
 	#Log-Config
 	logfile = './log/userLDA_%s_%s_%s'%(set_level,train_prob,topic_num)
@@ -116,6 +117,9 @@ def main():
 	#File path config
 	user_sim_file = './song_dataset/mid_data/user_sim_with_lda_%s_%s_%s.json'%(set_level,train_prob,topic_num)
 	file_template = './song_dataset/user_dataset_%s_%s_%s' #set_level, type, train_prob
+	if e_type == 'playlist':
+		user_sim_file = './pl_dataset/mid_data/user_sim_with_lda_%s_%s_%s.json'%(set_level,train_prob,topic_num)
+		file_template = './pl_dataset/user_playlist_%s_%s_%s' #set_level, type, train_prob
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
 	

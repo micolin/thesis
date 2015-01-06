@@ -13,12 +13,19 @@ class ItemTagCF(BaseModel):
 		self.song_tag_distrib = defaultdict(dict)
 
 	def build_ITDistribution(self,input_file,item_tag_file):
+		'''
+		@Desc: build item-tag distribution from input_file
+		@params[in]: input_file: path of file which contains item and tag infomation
+		@params[in]: item_tag_file: path of output
+		'''
+		#Load item-tag distribution if item_tag_file exists
 		if os.path.exists(item_tag_file):
 			self.load_ITDistribution(item_tag_file)
 			return
-
-		st_time = time.time()
+		
+		#Build item-tag distribution
 		logging.info("File %s doesn't exist, building Item-Tag distribution, input:%s"%(item_tag_file,input_file))
+		st_time = time.time()
 		with open(input_file,'rb') as fin:
 			for line in fin.readlines():
 				line = line.strip().split('\t')
@@ -32,6 +39,7 @@ class ItemTagCF(BaseModel):
 						except:
 							self.song_tag_distrib[song][tag] = 1
 		
+		#Dump item-tag distribution to file
 		logging.info("Dumping item-tag distribution to file:%s"%(item_tag_file))
 		with open(item_tag_file,'wb') as fin:
 			data_in_json = json.dumps(self.song_tag_distrib)
@@ -39,20 +47,37 @@ class ItemTagCF(BaseModel):
 		logging.info("Dumping process done..")
 		
 		ed_time = time.time()
-		self.cost_time = ed_time-st_time
+		logging.info('Build item-tag distribution cost:%s'%(time_ed - time_st))
 
 	def load_ITDistribution(self,item_tag_file):
+		'''
+		@Desc: load item-tag distribtion from file
+		@params[in] item_tag_file: path of file contains item-tag distribution
+		'''
 		logging.info('Loading item-tag distribution from file:%s'%(item_tag_file))
 		time_st = time.time()
 		input_file = open(item_tag_file,'rb')
 		self.song_tag_distrib = json.loads(input_file.read())
 		input_file.close()
 		time_ed = time.time()
-		self.cost_time = time_ed - time_st
-		logging.info('Loading item-tag distribution done..')
+		logging.info('Load item-tag distribution cost:%s'%(time_ed - time_st))
 
-	def build_item_similarity(self,all_songs,item_tag_file,item_sim_file,top_item_k=500):
+	def build_item_similarity(self,all_songs,item_sim_file,top_item_k=500):
+		'''
+		@Desc: build item-similarity matrix for all item
+		@params[in] all_songs: list, [sid, ]
+		@params[in]	item_sim_file: path of file contains item-similarity matrix
+		@params[in] top_item_k: number of sim-user to be kept in item-similarity matrix
+		'''
+		#Load item-similarity matrix from file if item_sim_file exsits
+		if os.path.exists(item_sim_file):
+			self.load_item_similarity(item_sim_file)
+			return
+		
+		#Build item-similarity matrix
 		time_st = time.time()
+	
+		#Calculate nomalization of each song
 		song_norm = defaultdict(float)
 		for song in all_songs:
 			try:
@@ -61,6 +86,7 @@ class ItemTagCF(BaseModel):
 			except:
 				song_norm[song] = 1
 
+		#Calculate sim_songs for each song
 		songs_num = len(all_songs)
 		fin = open(item_sim_file,'w')
 		for idx,sid in enumerate(all_songs):
@@ -72,26 +98,32 @@ class ItemTagCF(BaseModel):
 				sum_prod = 0
 				try:
 					inter_tag = set(self.song_tag_distrib[sid]) & set(self.song_tag_distrib[vid])
+					#There's no inter_tag, similarity will be zero, pass
 					if len(inter_tag) == 0:
 						continue
 					for tag in inter_tag:
 						sum_prod += self.song_tag_distrib[sid][tag] * self.song_tag_distrib[vid][tag]
 					sim_song_dict[vid] = sum_prod / np.sqrt(song_norm[sid]*song_norm[vid])
 				except:
-					sim_song_dict[vid] = 0
+					pass
 			
 			#Sorting sim_song_dict
 			sorted_sim_song = sorted(sim_song_dict.items(),key=lambda x:x[1],reverse=True)[:top_item_k]
 			self.item_similarity[sid] = sorted_sim_song
-
+			
+			#Dump to file
 			data_in_json = json.dumps(sorted_sim_song)
 			fin.write("%s\t%s\n"%(sid,data_in_json))
 
 		fin.close()
 		time_ed = time.time()
-		self.cost_time = time_ed - time_st
+		logging.info("Build item-similarity cost: %s"%(time_ed-time_st))
 
 	def load_item_similarity(self,item_sim_file):
+		'''
+		@Desc: load item-similarity matrix from file	
+		@params[in] item_sim_file: path of file which contains item-similarity info
+		'''
 		time_st = time.time()
 		with open(item_sim_file,'rb') as fin:
 			for line in open(item_sim_file,'rb'):
@@ -101,9 +133,14 @@ class ItemTagCF(BaseModel):
 				sim_songs = json.loads(line[1])
 				self.item_similarity[sid]=sim_songs
 		time_ed = time.time()
-		self.cost_time = time_ed - time_st
+		logging.info("Load item-similarity from file cost: %s"%(time_ed-time_st))
 
 	def recommend(self,uids, item_k=5, top_n=10):
+		'''
+		@Desc: recommend items to all user
+		@params[in] item_k: int, calculate k-nn item to recommend
+		@params[in] top_n: int, number of final recommendation
+		'''
 		time_st = time.time()
 		for uid in uids.keys():
 			candidate_songs = defaultdict(float)
@@ -131,10 +168,18 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
-	dataset = BaseDataSet()
-	file_template = './dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
+
+	#Filepath config
+	playlist_file = '/data/micolin/thesis-git/wangyiMusic/data/playlist_basic_info/playlist.basic_info_all'
+	item_tag_file = './song_dataset/mid_data/song_tag_distribution.json'
+	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
+	top_item_k=1000
+	item_sim_file = './song_dataset/mid_data/item_similarity_withTag_%s_%s_%s.json'%(set_level,train_prob,top_item_k)
+	
+	#Build dataset
+	dataset = BaseDataSet()
 	dataset.build_data(train_file,test_file)
 	logging.info("Build dataset cost:%s"%(dataset.cost_time))
 	print "DataForTrain: %s"%(train_file)
@@ -142,20 +187,10 @@ def main():
 	print "Dataset train_set info: %s"%(dataset.get_train_info())
 	print "Dataset test_set info: %s"%(dataset.get_test_info())
 
-	playlist_file = '/data/micolin/thesis-git/wangyiMusic/data/playlist_basic_info/playlist.basic_info_all'
-	item_tag_file = './mid_data/song_tag_distribution.json'
+	#Initiate recommender
 	recommender = ItemTagCF()
 	recommender.build_ITDistribution(playlist_file,item_tag_file)
-	top_item_k=1000
-	item_sim_file = './mid_data/item_similarity_withTag_%s_%s_%s.json'%(set_level,train_prob,top_item_k)
-	if os.path.exists(item_sim_file):
-		logging.info("File %s exists, loading item similarity matrix"%(item_sim_file))
-		recommender.load_item_similarity(item_sim_file)
-		logging.info("Load item_similarity cost: %s"%(recommender.cost_time))
-	else:
-		logging.info("File %s doesn't exist, building item similarity matrix"%(item_sim_file))
-		recommender.build_item_similarity(list(dataset.all_songs),item_tag_file,item_sim_file,top_item_k=top_item_k)
-		logging.info("Build item_similarity cost: %s"%(recommender.cost_time))
+	recommender.build_item_similarity(list(dataset.all_songs),item_sim_file,top_item_k=top_item_k)
 	
 	#Record best scores
 	best_f_score = {'f_score':0}
@@ -191,6 +226,4 @@ def main():
 if __name__=="__main__":
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/it_CF.log',filemode='w')
-	logging.info("Item_Tag_CF >>>>>>>>>>>> Start")
 	main()
-	logging.info("Item_Tag_CF >>>>>>>>>>>> Complete")

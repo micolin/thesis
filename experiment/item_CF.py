@@ -99,7 +99,8 @@ def main():
 	set_level = args[1]
 	train_prob = args[2]
 	e_type = args[3]	#Experiment type: song or playlist
-	dataset = BaseDataSet()
+	
+	#Filepath config
 	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
 	item_sim_file = './song_dataset/mid_data/item_similarity_%s_%s.json'%(set_level,train_prob)
 	if e_type == 'playlist':
@@ -108,8 +109,12 @@ def main():
 		
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
+
+	#Build dataset
+	dataset = BaseDataSet()
 	dataset.build_data(train_file,test_file)
 	logging.info("Build dataset cost:%s"%(dataset.cost_time))
+
 	print "DataForTrain: %s"%(train_file)
 	print "DataForTest: %s"%(test_file)
 	print "Dataset train_set info: %s"%(dataset.get_train_info())
@@ -120,6 +125,7 @@ def main():
 	best_precision = {'precision':0}
 	best_recall = {'recall':0}
 
+	#Initiate recommender
 	itemCF_recommender = ItemCF()
 	if os.path.exists(item_sim_file):
 		logging.info("File %s exists, loading item similarity matrix"%(item_sim_file))
@@ -157,8 +163,6 @@ def main():
 	print "Best_Recall: %s"%(best_recall)
 
 if __name__=="__main__":
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/itemCF.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
-	logging.info("ItemCF >>>>>>>>>>>> Start")
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/itemCF.log',filemode='w')
 	main()
-	logging.info("ItemCF >>>>>>>>>>>> Complete")
