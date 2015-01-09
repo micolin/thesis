@@ -4,7 +4,7 @@ import time
 from collections import *
 import json
 
-class BaseModel:
+class BaseModel(object):
 	def __init__(self):
 		self.result = {}
 		self.cost_time = 0
@@ -32,7 +32,7 @@ class BaseModel:
 		scores = {'precision':precision,'recall':recall,'f_score':fscore}
 		return scores
 
-class BaseDataSet:
+class BaseDataSet(object):
 	'''
 	@Desc: used for Popularity Model, Random-Select Model, userCF Model
 	'''
@@ -105,38 +105,57 @@ class BaseDataSet:
 		info['average'] = sum(size_list)/len(size_list)
 		return info
 
-import numpy as np
-class MatDataSet(BaseDataSet):
-	def __init__(self):
-		BaseDataSet.__init__(self)	#Include member : train_data, test_data, cost_time, all_songs
-		self.us_matrix = []
-		self.song_user_dict = defaultdict(list)
-		self.user_dict = {}
-		self.song_dict = {}
+import heapq
+class TopKHeap(object):
+	def __init__(self,k):
+		self.k = k
+		self.data = []
 
-	def build_data(self,train_file,test_file):
-		build_st = time.time()
-		BaseDataSet.build_data(self,train_file,test_file)
-		user_tot = len(self.train_data.keys())
-		song_tot = len(self.all_songs)
-		self.us_matrix = np.zeros((user_tot,song_tot),dtype='int8')
-		
-		#Record song-idx mapping
-		for idx,song in enumerate(self.all_songs):
-			self.song_dict[song] = idx
-		#Record user-idx mapping
-		for idx,uid in enumerate(self.train_data.iterkeys()):
-			self.user_dict[uid] = idx
-			for song in self.train_data[uid]:
-				self.us_matrix[idx][self.song_dict[song]] = 1
-		self.us_matrix = np.mat(self.us_matrix)
-		build_ed = time.time()
-		self.cost_time = build_ed - build_st
+	def push(self,elem):
+		_elem = (elem[1],elem[0])
+		if len(self.data) < self.k:
+			heapq.heappush(self.data,_elem)
+		else:
+			topk_small = self.data[0]
+			if _elem[0] > topk_small[0]:
+				heapq.heapreplace(self.data,_elem)
+
+	def topk(self):
+		'''
+		@Desc: Get top-k elems
+		'''
+		return [(x[1],x[0]) for x in sorted([heapq.heappop(self.data) for i in range(len(self.data))],key=lambda x:x[0],reverse=True)]
+
+import random
+
+def dot(u,v):
+    return sum(ux*vx for ux,vx in zip(u,v))
+
+class LSH_Cosine(object):
+	def __init__(self,d):
+		self.d = d
+	
+	def rand_vec(self):
+		return [random.gauss(0,1) for i in range(self.d)]
+
+	def create_hash_func(self):
+		return CosineHash(self.rand_vec())
+	
+	def combine(self,hashes):
+		return sum(2**i if h > 0 else 0 for i,h in enumerate(hashes))
+
+class CosineHash(object):
+	def __init__(self,r):
+		self.r = r
+
+	def hash(self,vec):
+		return self.sgn(dot(vec,self.r))
+
+	def sgn(self,x):
+		return int(x>0)
 
 def test():
-	dataset = MatDataSet()
-	dataset.build_data('./dataset/user_dataset_1w_train_0.6','./dataset/user_dataset_1w_test_0.6')
-	print "User_dict:%s"%(dataset.user_dict)
-	print "Cost_time:",(dataset.cost_time)
+	lsh_cosine = LSH_Cosine(10)
+	print lsh_cosine.rand_vec()
 
 #test()

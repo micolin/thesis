@@ -98,7 +98,8 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
-	e_type = args[3]	#Experiment type: song or playlist
+	top_n = int(args[3])
+	e_type = args[4]	#Experiment type: song or playlist
 	
 	#Filepath config
 	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
@@ -137,26 +138,25 @@ def main():
 		logging.info("Load item_similarity cost: %s"%(itemCF_recommender.cost_time))
 	
 	#Recommendation
-	for item_k in range(20,70):
-		for top_n in range(1,80,2):
-			itemCF_recommender.recommend(dataset.train_data,item_k=item_k,top_n=top_n)
-			logging.info("Train_prob:%s Item_k:%s Top_n:%s Cost:%s"%(train_prob,item_k,top_n,itemCF_recommender.cost_time))
-			scores = itemCF_recommender.score(dataset.test_data)
-			print "Item_k:%s\tTop_n:%s\tScores:%s"%(item_k,top_n,scores)
+	for item_k in range(20,100):
+		itemCF_recommender.recommend(dataset.train_data,item_k=item_k,top_n=top_n)
+		logging.info("Train_prob:%s Item_k:%s Top_n:%s Cost:%s"%(train_prob,item_k,top_n,itemCF_recommender.cost_time))
+		scores = itemCF_recommender.score(dataset.test_data)
+		print "Item_k:%s\tTop_n:%s\tScores:%s"%(item_k,top_n,scores)
 
-			#Find Best Score
-			if scores['f_score'] > best_f_score['f_score']:
-				best_f_score = scores
-				best_f_score['item_k'] = item_k
-				best_f_score['top_n'] = top_n
-			if scores['precision'] > best_precision['precision']:
-				best_precision = scores
-				best_precision['item_k']=item_k
-				best_precision['top_n'] = top_n
-			if scores['recall'] > best_recall['recall']:
-				best_recall = scores
-				best_recall['item_k']=item_k
-				best_recall['top_n'] = top_n
+		#Find Best Score
+		if scores['f_score'] > best_f_score['f_score']:
+			best_f_score = scores
+			best_f_score['item_k'] = item_k
+			best_f_score['top_n'] = top_n
+		if scores['precision'] > best_precision['precision']:
+			best_precision = scores
+			best_precision['item_k']=item_k
+			best_precision['top_n'] = top_n
+		if scores['recall'] > best_recall['recall']:
+			best_recall = scores
+			best_recall['item_k']=item_k
+			best_recall['top_n'] = top_n
 	
 	print "Best_F_Score: %s"%(best_f_score)
 	print "Best_Precision: %s"%(best_precision)

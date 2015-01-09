@@ -97,7 +97,7 @@ class ItemTagCF(BaseModel):
 					continue
 				sum_prod = 0
 				try:
-					inter_tag = set(self.song_tag_distrib[sid]) & set(self.song_tag_distrib[vid])
+					inter_tag = set(self.song_tag_distrib[sid].keys()) & set(self.song_tag_distrib[vid].keys())
 					#There's no inter_tag, similarity will be zero, pass
 					if len(inter_tag) == 0:
 						continue
@@ -168,6 +168,7 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
+	top_n = int(args[3])
 
 	#Filepath config
 	playlist_file = '/data/micolin/thesis-git/wangyiMusic/data/playlist_basic_info/playlist.basic_info_all'
@@ -198,26 +199,25 @@ def main():
 	best_recall = {'recall':0}
 
 	#Recommendation
-	for item_k in range(20,70):
-		for top_n in range(1,80,2):
-			recommender.recommend(dataset.train_data,item_k=item_k,top_n=top_n)
-			logging.info("Train_prob:%s Item_k:%s Top_n:%s Cost:%s"%(train_prob,item_k,top_n,recommender.cost_time))
-			scores = recommender.score(dataset.test_data)
-			print "Item_k:%s\tTop_n:%s\tScores:%s"%(item_k,top_n,scores)
+	for item_k in range(20,100):
+		recommender.recommend(dataset.train_data,item_k=item_k,top_n=top_n)
+		logging.info("Train_prob:%s Item_k:%s Top_n:%s Cost:%s"%(train_prob,item_k,top_n,recommender.cost_time))
+		scores = recommender.score(dataset.test_data)
+		print "Item_k:%s\tTop_n:%s\tScores:%s"%(item_k,top_n,scores)
 	
-			#Find Best Score
-			if scores['f_score'] > best_f_score['f_score']:
-				best_f_score = scores
-				best_f_score['item_k'] = item_k
-				best_f_score['top_n'] = top_n
-			if scores['precision'] > best_precision['precision']:
-				best_precision = scores
-				best_precision['item_k']=item_k
-				best_precision['top_n'] = top_n
-			if scores['recall'] > best_recall['recall']:
-				best_recall = scores
-				best_recall['item_k']=item_k
-				best_recall['top_n'] = top_n
+		#Find Best Score
+		if scores['f_score'] > best_f_score['f_score']:
+			best_f_score = scores
+			best_f_score['item_k'] = item_k
+			best_f_score['top_n'] = top_n
+		if scores['precision'] > best_precision['precision']:
+			best_precision = scores
+			best_precision['item_k']=item_k
+			best_precision['top_n'] = top_n
+		if scores['recall'] > best_recall['recall']:
+			best_recall = scores
+			best_recall['item_k']=item_k
+			best_recall['top_n'] = top_n
 			
 	print "Best_F_Score: %s"%(best_f_score)
 	print "Best_Precision: %s"%(best_precision)
