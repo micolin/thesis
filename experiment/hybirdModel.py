@@ -45,9 +45,16 @@ class HybirdModel(BaseModel):
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
 		
-	def hybird_recommend_result(self,user_songs, userCF_sim_file, userLDA_sim_file):
-		pass
-
+	def hybird_recommend_result(self,user_songs, userCF_sim_file, userLDA_sim_file,user_k,top_n):
+		self.user_cf.load_user_similarity(userCF_sim_file)
+		self.user_lda.load_user_similarity(userLDA_sim_file)
+		
+		self.user_cf.recommend(user_songs,user_k=user_k,top_n=top_n/2)
+		self.user_lda.recommend(user_songs,user_k=user_k,top_n=top_n/2)
+		
+		for uid in user_songs.keys():
+			self.result[uid] = self.user_cf.result[uid]+self.user_lda.result[uid]	
+			print len(self.result[uid]),len(set(self.result[uid]))
 
 def main():
 	args = sys.argv
@@ -78,8 +85,9 @@ def main():
 
 	#Build Hybird-Model
 	recommender = HybirdModel()
-	recommender.hybird_user_sim(dataset.train_data,userCF_sim_file,userLDA_sim_file,theta=0.5)
-
+	recommender.hybird_recommend_result(dataset.train_data,userCF_sim_file,userLDA_sim_file,20,top_n)
+	#recommender.hybird_user_sim(dataset.train_data,userCF_sim_file,userLDA_sim_file,theta=0.5)
+	'''
 	for user_k in range(20,100):
 		recommender.recommend(dataset.train_data,user_k,top_n)
 		logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
@@ -103,7 +111,7 @@ def main():
 	print "Best_F_Score: %s"%(best_f_score)
 	print "Best_Precision: %s"%(best_precision)
 	print "Best_Recall: %s"%(best_recall)
-
+	'''
 if __name__=="__main__":
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/hybirdModel.log',filemode='w')
 	main()
