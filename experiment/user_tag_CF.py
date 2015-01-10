@@ -71,7 +71,13 @@ class UserTagCF(BaseModel):
 		time_ed = time.time()
 		logging.info("Load user-tag distribution cost: %s"%(time_ed-time_st))
 	
-	def build_user_similarity(self,user_songs,user_sim_file,top_user_k=200):
+	def normalize_tag_distrib(self):
+		for uid, tags in self.user_tag_distrib.items():
+			all_sum = sum(tags.values())
+			for tag,freq in tags.item():
+				self.user_tag_distrib[uid][tag]=float(freq)/all_sum
+
+	def build_user_similarity(self,user_songs,user_sim_file,tag_norm=0,top_user_k=300):
 		'''
 		'''
 		#Load user-similarity matrix from file if user_sim_file exists
@@ -79,10 +85,14 @@ class UserTagCF(BaseModel):
 			self.load_user_similarity(user_sim_file)
 			return
 
+		#Normalize user_tag_distrib
+		if tag_norm:
+			self.normalize_tag_distrib()
+
 		#Build user-similarity for each user
 		time_st = time.time()
 
-		#Calculate nomalization of each user
+		#Calculate normalization of each user
 		user_norm = defaultdict(float)
 		for uid in user_songs.keys():
 			try:
@@ -100,7 +110,7 @@ class UserTagCF(BaseModel):
 				if vid == uid:
 					continue
 				sum_prod = 0
-				inter_tag = set(self.user_tag_distrib[uid].keys())&set(self.user_tag_distrib[vid].keys())
+				inter_tag = set(self.user_tag_distrib[uid].keys()) & set(self.user_tag_distrib[vid].keys())
 				if len(inter_tag) == 0:
 					continue
 				for tag in inter_tag:
@@ -153,6 +163,7 @@ def main():
 	set_level = args[1]
 	train_prob = args[2]
 	top_n = int(args[3])
+	tag_norm = int(args[4])
 	
 	#Filepath config
 	item_tag_file = './song_dataset/mid_data/song_tag_distribution.json'
@@ -160,7 +171,7 @@ def main():
 	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
-	user_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s.json'%(set_level,train_prob)
+	user_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s_%s.json'%(set_level,train_prob,tag_norm)
 	
 	#Build dataset
 	dataset = BaseDataSet()
@@ -175,11 +186,11 @@ def main():
 	best_f_score = {'f_score':0}
 	best_precision = {'precision':0}
 	best_recall = {'recall':0}
-
+	
 	#Initiate recommender
 	recommender = UserTagCF()
 	recommender.build_userTagDistribution(dataset.train_data,item_tag_file,user_tag_file)
-	recommender.build_user_similarity(dataset.train_data,user_sim_file)
+	recommender.build_user_similarity(dataset.train_data,user_sim_file,tag_norm=tag_norm)
 
 	#Recommendation
 	for user_k in range(20,100):
@@ -205,7 +216,7 @@ def main():
 	print "Best_F_Score: %s"%(best_f_score)
 	print "Best_Precision: %s"%(best_precision)
 	print "Best_Recall: %s"%(best_recall)
-
+	
 if __name__=="__main__":
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userTagCF.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
