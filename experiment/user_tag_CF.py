@@ -74,7 +74,7 @@ class UserTagCF(BaseModel):
 	def normalize_tag_distrib(self):
 		for uid, tags in self.user_tag_distrib.items():
 			all_sum = sum(tags.values())
-			for tag,freq in tags.item():
+			for tag,freq in tags.items():
 				self.user_tag_distrib[uid][tag]=float(freq)/all_sum
 
 	def build_user_similarity(self,user_songs,user_sim_file,tag_norm=0,top_user_k=300):
