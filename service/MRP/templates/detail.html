@@ -1,0 +1,28 @@
+{% extends "base.html" %}
+
+{% block body %}
+	{% block menu %}
+		<div class="masthead clearfix">
+			<div class="inner">
+				<h3 class="masthead-brand">MRP</h3>
+				<ul class="nav masthead-nav">
+					<li><a href="/home">Home</a></li>
+					<li><a href="/search">Search</a></li>
+					<li><a href="/about">About Me</a></li>
+				</u>
+			</div>
+		</div>
+	{% endblock %}
+	{% block main_body %}
+		<div class="row">
+			<div class='col-md-6'>
+				<p>Recommend One Song</p>
+				<embed src="http://music.163.com/style/swf/widget.swf?sid=21266964&type=2&auto=0&width=320&height=66" width="340" height="86"  allowNetworking="all"></embed>
+			</div>
+			<div class='col-md-6'>
+				<p>Recommend List of Songs</p>
+				<embed src="http://music.163.com/style/swf/widget.swf?sid={{rec_songs}}&type=2&auto=0&width=310&height=430" width="340" height="450"  allowNetworking="all"></embed>
+			</div>
+		</div>
+	{% endblock %}
+{% endblock %}

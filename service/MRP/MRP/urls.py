@@ -19,5 +19,5 @@ urlpatterns = patterns('',
 	url(r'^$',home),
 	url(r'^about/$',about),
 	url(r'^search/$',search),
-	url(r'^detail/[\s\S]*$',detail),
+	url(r'^detail/$',detail),
 )

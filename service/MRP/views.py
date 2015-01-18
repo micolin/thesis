@@ -17,7 +17,6 @@ def search(request):
 	pass
 
 def detail(request):
-	pass
+	rec_songs = '2001320,26569168,5138277'
+	return render_to_response("detail.html",{'rec_songs':rec_songs})
 
-def testbase(request):
-	return render_to_response("base.html")
