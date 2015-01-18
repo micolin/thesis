@@ -186,6 +186,7 @@ def crawl_playlist_info(filepath):
 					try:
 						playlist = Playlist(playlist_id,playlist_page)
 						playlist.storage_to_db(db,table_name)
+						print playlist.data_in_string()
 					except Exception, e:
 						logging.error('Parsing playlist: %s failed..'%(playlist_url))
 						logging.error(e)

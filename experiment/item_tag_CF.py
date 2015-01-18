@@ -2,6 +2,7 @@
 import os,sys
 from collections import *
 import time
+from storage import db_connection
 import numpy as np
 from models import BaseModel, BaseDataSet
 import logging,json
@@ -12,11 +13,10 @@ class ItemTagCF(BaseModel):
 		self.item_similarity = defaultdict(dict)
 		self.song_tag_distrib = defaultdict(dict)
 
-	def build_ITDistribution(self,input_file,item_tag_file):
+	def build_ITDistribution(self,item_tag_file):
 		'''
-		@Desc: build item-tag distribution from input_file
-		@params[in]: input_file: path of file which contains item and tag infomation
-		@params[in]: item_tag_file: path of output
+		@Desc: build item-tag distribution from database
+		@params[in]: item_tag_file: path of item_tag distribution file
 		'''
 		#Load item-tag distribution if item_tag_file exists
 		if os.path.exists(item_tag_file):
@@ -24,8 +24,9 @@ class ItemTagCF(BaseModel):
 			return
 		
 		#Build item-tag distribution
-		logging.info("File %s doesn't exist, building Item-Tag distribution, input:%s"%(item_tag_file,input_file))
-		st_time = time.time()
+		logging.info("File %s doesn't exist, building Item-Tag distribution from database"%(item_tag_file))
+		time_st = time.time()
+		'''
 		with open(input_file,'rb') as fin:
 			for line in fin.readlines():
 				line = line.strip().split('\t')
@@ -38,15 +39,31 @@ class ItemTagCF(BaseModel):
 							self.song_tag_distrib[song][tag] += 1
 						except:
 							self.song_tag_distrib[song][tag] = 1
-		
+		'''
+		db = db_connection()
+		collection = db['playlist_info']
+		records = collection.find()
+		for record in records:
+			songs = record['songs'].split(',')
+			tags = record['tags'].encode('utf8')
+			if tags == "none":
+				continue
+			for song in songs:
+				for tag in tags.split(','):
+					try:
+						self.song_tag_distrib[song][tag] += 1
+					except:
+						self.song_tag_distrib[song][tag] = 1
+
 		#Dump item-tag distribution to file
 		logging.info("Dumping item-tag distribution to file:%s"%(item_tag_file))
 		with open(item_tag_file,'wb') as fin:
-			data_in_json = json.dumps(self.song_tag_distrib)
-			fin.write(data_in_json)
+			for sid,tag_dist in self.song_tag_distrib.items():
+				data_in_json = json.dumps(tag_dist)
+				fin.write("%s\t%s\n"%(sid,data_in_json))
 		logging.info("Dumping process done..")
 		
-		ed_time = time.time()
+		time_ed = time.time()
 		logging.info('Build item-tag distribution cost:%s'%(time_ed - time_st))
 
 	def load_ITDistribution(self,item_tag_file):
@@ -56,9 +73,12 @@ class ItemTagCF(BaseModel):
 		'''
 		logging.info('Loading item-tag distribution from file:%s'%(item_tag_file))
 		time_st = time.time()
-		input_file = open(item_tag_file,'rb')
-		self.song_tag_distrib = json.loads(input_file.read())
-		input_file.close()
+		with open(item_tag_file,'rb') as fin:
+			for line in fin.readlines():
+				line = line.strip().split('\t')
+				sid = line[0]
+				tag_dist = json.loads(line[1])
+				self.song_tag_distrib[sid]=tag_dist
 		time_ed = time.time()
 		logging.info('Load item-tag distribution cost:%s'%(time_ed - time_st))
 
@@ -171,7 +191,7 @@ def main():
 	top_n = int(args[3])
 
 	#Filepath config
-	playlist_file = '/data/micolin/thesis-git/wangyiMusic/data/playlist_basic_info/playlist.basic_info_all'
+	#playlist_file = '/data/micolin/thesis-git/wangyiMusic/data/playlist_basic_info/playlist.basic_info_all'
 	item_tag_file = './song_dataset/mid_data/song_tag_distribution.json'
 	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
 	train_file = file_template%(set_level,'train',train_prob)
@@ -190,7 +210,7 @@ def main():
 
 	#Initiate recommender
 	recommender = ItemTagCF()
-	recommender.build_ITDistribution(playlist_file,item_tag_file)
+	recommender.build_ITDistribution(item_tag_file)
 	recommender.build_item_similarity(list(dataset.all_songs),item_sim_file,top_item_k=top_item_k)
 	
 	#Record best scores
@@ -223,7 +243,13 @@ def main():
 	print "Best_Precision: %s"%(best_precision)
 	print "Best_Recall: %s"%(best_recall)
 
+def build_item_tag_distribution():
+	item_tag_file = './test.new_item_tag'
+	recommender = ItemTagCF()
+	recommender.build_ITDistribution(item_tag_file)
+
 if __name__=="__main__":
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
+	#build_item_tag_distribution()
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/it_CF.log',filemode='w')
 	main()

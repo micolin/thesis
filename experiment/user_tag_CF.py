@@ -18,9 +18,13 @@ class UserTagCF(BaseModel):
 		@params[in] item_tag_file: path of file contains item-tag distribution
 		'''
 		time_st = time.time()
-		input_file = open(item_tag_file,'rb')
-		song_tag_distrib = json.loads(input_file.read())	#{sid: {tag: frequency}}
-		input_file.close()
+		song_tag_distrib = defaultdict(dict)
+		with open(item_tag_file,'rb') as fin:
+			for line in fin.readlines():
+				line = line.strip().split('\t')
+				sid = line[0]
+				tag_dist = json.loads(line[1])
+				song_tag_distrib[sid]=tag_dist
 		time_ed = time.time()
 		logging.info('Load item-tag distribution cost:%s'%(time_ed - time_st))
 		return song_tag_distrib
@@ -46,8 +50,10 @@ class UserTagCF(BaseModel):
 			tag_dict = defaultdict(int)
 			for song in songs:
 				try:
+					tag_freq_sum=sum(song_tag_distrib[song].values())	#Modify [accepted]
 					for tag in song_tag_distrib[song].keys():
-						tag_dict[tag]+=1
+						#tag_dict[tag]+=1
+						tag_dict[tag] += float(song_tag_distrib[song][tag])/tag_freq_sum	#Modify [accepted]
 				except:
 					#There's no tag info to the song
 					pass
@@ -77,17 +83,13 @@ class UserTagCF(BaseModel):
 			for tag,freq in tags.items():
 				self.user_tag_distrib[uid][tag]=float(freq)/all_sum
 
-	def build_user_similarity(self,user_songs,user_sim_file,tag_norm=0,top_user_k=300):
+	def build_user_similarity(self,user_songs,user_sim_file,top_user_k=300):
 		'''
 		'''
 		#Load user-similarity matrix from file if user_sim_file exists
 		if os.path.exists(user_sim_file):
 			self.load_user_similarity(user_sim_file)
 			return
-
-		#Normalize user_tag_distrib
-		if tag_norm:
-			self.normalize_tag_distrib()
 
 		#Build user-similarity for each user
 		time_st = time.time()
@@ -163,7 +165,6 @@ def main():
 	set_level = args[1]
 	train_prob = args[2]
 	top_n = int(args[3])
-	tag_norm = int(args[4])
 	
 	#Filepath config
 	item_tag_file = './song_dataset/mid_data/song_tag_distribution.json'
@@ -171,7 +172,7 @@ def main():
 	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
-	user_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s_%s.json'%(set_level,train_prob,tag_norm)
+	user_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s.json'%(set_level,train_prob)
 	
 	#Build dataset
 	dataset = BaseDataSet()
@@ -190,10 +191,10 @@ def main():
 	#Initiate recommender
 	recommender = UserTagCF()
 	recommender.build_userTagDistribution(dataset.train_data,item_tag_file,user_tag_file)
-	recommender.build_user_similarity(dataset.train_data,user_sim_file,tag_norm=tag_norm)
+	recommender.build_user_similarity(dataset.train_data,user_sim_file)
 
 	#Recommendation
-	for user_k in range(20,100):
+	for user_k in range(20,101):
 		recommender.recommend(dataset.train_data,user_k=user_k,top_n=top_n)
 		logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
 		scores = recommender.score(dataset.test_data)
