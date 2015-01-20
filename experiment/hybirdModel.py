@@ -39,7 +39,7 @@ class HybirdModel(BaseModel):
 		time_ed = time.time()
 		logging.info('Rebuild user-similarity matrix cost:%s'%(time_ed-time_st))
 
-	def recommend(self,user_songs,user_k,top_n):
+	def recommend(self,user_songs,user_tags,item_tags,user_k,top_n,reorder=0):
 		time_st = time.time()
 		for uid in user_songs.keys():
 			candidate_songs = defaultdict(float)
@@ -47,15 +47,17 @@ class HybirdModel(BaseModel):
 			for (vid,sim) in top_k_users:
 				for song in set(user_songs[vid])-set(user_songs[uid]):
 					candidate_songs[song] += sim
-			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n]
-			self.result[uid] = [song[0] for song in top_n_songs]
+			if reorder:
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n*4]
+				top_n_songs = self.reorder_withItemTag(user_tags[uid],item_tags,top_n_songs)[:top_n]
+				self.result[uid] = [song[0] for song in top_n_songs]
+			else:
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n]
+				self.result[uid] = [song[0] for song in top_n_songs]
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
-		
-	def hybird_recommend_result(self,user_songs, userTag_sim_file, userLDA_sim_file,user_k,top_n):
-		self.userTag.load_user_similarity(userTag_sim_file)
-		self.userLda.load_user_similarity(userLDA_sim_file)
 
+	def hybird_recommend_result(self,user_songs,user_k,top_n):
 		time_st = time.time()
 		for uid in user_songs.keys():
 			candidate_songs = defaultdict(float)
@@ -72,23 +74,18 @@ class HybirdModel(BaseModel):
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
 
-	def hybird_result_withReorder(self,user_songs,userTag_sim_file,userLDA_sim_file,user_tags,item_tags,user_k,top_n):
-		self.userTag.load_user_similarity(userTag_sim_file)
-		self.userLda.load_user_similarity(userLDA_sim_file)
-
+	def hybird_result_withReorder(self,user_songs,user_tags,item_tags,user_k,top_n):
 		time_st = time.time()
 		for uid in user_songs.keys():
 			candidate_songs = defaultdict(float)
-			'''
 			for (vid,sim) in self.userLda.user_similarity[uid][:user_k]:
 				for song in set(user_songs[vid])-set(user_songs[uid]):
 					candidate_songs[song]+= sim
-			'''
 			for (vid,sim) in self.userTag.user_similarity[uid][:user_k]:
 				for song in set(user_songs[vid])-set(user_songs[uid]):
 					candidate_songs[song]+= sim
 		
-			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n*2]
+			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n*4]
 			top_n_songs = self.reorder_withItemTag(user_tags[uid],item_tags,top_n_songs)[:top_n]
 			self.result[uid] = [song[0] for song in top_n_songs]
 		time_ed = time.time()
@@ -160,21 +157,31 @@ def main():
 	best_precision = {'precision':0}
 	best_recall = {'recall':0}
 
-	#Build Hybird-Model
+	#Data Preparation
+	items_tag_dict = {}
+	users_tag_dict = {}
+	if recommend_job in ('mix_result_reorder','mix_sim_reorder'):
+		items_tag_dict = load_tag_distribution('./song_dataset/mid_data/song_tag_distribution.json')	#Load item_tag_distrib
+		user_tag_file = './song_dataset/mid_data/user_tag_distribution_%s_%s.json'%(set_level,train_prob)
+		users_tag_dict = load_tag_distribution(user_tag_file)
+
+	#Initiate Hybird-Model
 	recommender = HybirdModel()
-	if recommend_job == 'mix_sim':
+	if recommend_job in ('mix_sim','mix_sim_reorder'):
 		recommender.hybird_user_sim(dataset.train_data,userTag_sim_file,userLDA_sim_file,theta=0.45)
+	elif recommend_job in ('mix_result','mix_result_reorder'):
+		recommender.userTag.load_user_similarity(userTag_sim_file)
+		recommender.userLda.load_user_similarity(userLDA_sim_file)
 
 	for user_k in range(20,101):
 		if recommend_job == 'mix_sim':
-			recommender.recommend(dataset.train_data,user_k,top_n)
+			recommender.recommend(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n,reorder=0)
+		elif recommend_job == 'mix_sim_reorder':
+			recommender.recommend(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n,reorder=1)
 		elif recommend_job == 'mix_result':
-			recommender.hybird_recommend_result(dataset.train_data,userTag_sim_file,userLDA_sim_file,user_k,top_n)
+			recommender.hybird_recommend_result(dataset.train_data,user_k,top_n)
 		elif recommend_job == 'mix_result_reorder':
-			items_tag_dict = load_tag_distribution('./song_dataset/mid_data/song_tag_distribution.json')	#Load item_tag_distrib
-			user_tag_file = './song_dataset/mid_data/user_tag_distribution_%s_%s.json'%(set_level,train_prob)
-			users_tag_dict = load_tag_distribution(user_tag_file)
-			recommender.hybird_result_withReorder(dataset.train_data,userTag_sim_file,userLDA_sim_file,users_tag_dict,items_tag_dict,user_k,top_n)
+			recommender.hybird_result_withReorder(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n)
 		logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
 		scores = recommender.score(dataset.test_data)
 		print "User_k:%s\tTop_n:%s\tScores:%s"%(user_k,top_n,scores)
