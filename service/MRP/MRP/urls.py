@@ -19,5 +19,6 @@ urlpatterns = patterns('',
 	url(r'^$',home),
 	url(r'^about/$',about),
 	url(r'^search/$',search),
-	url(r'^detail/$',detail),
+	url(r'^search/detail/$',detail),
+	url(r'^save/$',saveUser),
 )

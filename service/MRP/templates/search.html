@@ -1,0 +1,32 @@
+{% extends "base.html" %}
+
+{% block body %}
+	{% block menu %}
+		<div class="masthead clearfix">
+			<div class="inner">
+				<h3 class="masthead-brand">MRP</h3>
+				<ul class="nav masthead-nav">
+					<li><a href="/home">Home</a></li>
+					<li class="active"><a href="#">Search</a></li>
+					<li><a href="/about">About Me</a></li>
+				</ul>
+			</div>
+		</div>
+	{% endblock %}
+	{% block main_body %}
+		<h3>Music Recommendation Platform</h3>
+		<div class='row'>
+			<div class='col-md-8 col-md-offset-2'>
+				<div class="input-form">
+					<form name='input' action='detail' method="get" name='user_form'>
+						<input type="text" class="form-control" id="uid" name="uid" placeholder="请输入网易云音乐ID">
+						<br>
+               			<button type="submit" class="btn btn-primary" style="font-size: 15px" >
+							<span class="glyphicon glyphicon-search"></span> SEARCH
+						</button>
+					</form>
+				</div>
+			</div>
+		</div>
+	{% endblock %}
+{% endblock %}

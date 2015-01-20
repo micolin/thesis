@@ -5,6 +5,7 @@ class User(Document):
 	uid = StringField(required=True,primary_key=True)
 	user_name = StringField(max_length=100)
 	tag_distrib = StringField()
+	rec_songs = StringField()
 
 class Song(Document):
 	sid = StringField(required=True,primary_key=True)

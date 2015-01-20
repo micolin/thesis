@@ -9,18 +9,24 @@
 					<li><a href="/home">Home</a></li>
 					<li><a href="/search">Search</a></li>
 					<li><a href="/about">About Me</a></li>
-				</u>
+				</ul>
 			</div>
 		</div>
 	{% endblock %}
 	{% block main_body %}
 		<div class="row">
-			<div class='col-md-6'>
-				<p>Recommend One Song</p>
-				<embed src="http://music.163.com/style/swf/widget.swf?sid=21266964&type=2&auto=0&width=320&height=66" width="340" height="86"  allowNetworking="all"></embed>
+			<div class='col-md-8'>
+				<h5>User Interest</h5>
+				{% for tag in interest %}
+				<div class="progress">
+   					<div class="progress-bar progress-bar-info" role="progressbar" aria-valuenow="60" aria-valuemin="0" aria-valuemax="90" style="width: {{tag.dist}};">
+      				<span class="label">{{tag.tag}}  {{tag.dist}}</span>
+					</div>
+				</div>
+				{% endfor %}
 			</div>
-			<div class='col-md-6'>
-				<p>Recommend List of Songs</p>
+			<div class='col-md-4'>
+				<h5 align="center">Recommend List of Songs</h5>
 				<embed src="http://music.163.com/style/swf/widget.swf?sid={{rec_songs}}&type=2&auto=0&width=310&height=430" width="340" height="450"  allowNetworking="all"></embed>
 			</div>
 		</div>

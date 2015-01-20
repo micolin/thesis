@@ -23,9 +23,13 @@ class HybirdModel(BaseModel):
 		#Rebuild user_similarity matrix
 		for uid in user_songs.keys():
 			candidate_user = defaultdict(float)
-			#user_sim = user_tag_sim*theta*(1+user_lda_sim*(1-theta)) greater than user_sim= user_tag_sim * theta + user_lda_sim*(1-theta)
+			'''
+			user_sim = user_tag_sim*theta*(1+user_lda_sim*(1-theta)) 
+				greater than 
+			user_sim= user_tag_sim * theta + user_lda_sim*(1-theta)
+			'''
 			for (vid,sim) in self.userTag.user_similarity[uid]:
-				candidate_user[vid] += sim * theta
+				candidate_user[vid] += sim * theta + 1
 			for (vid,sim) in self.userLda.user_similarity[uid]:
 				candidate_user[vid] *= (1+sim * (1-theta))
 
@@ -61,7 +65,7 @@ class HybirdModel(BaseModel):
 
 			for (vid,sim) in self.userTag.user_similarity[uid][:user_k]:
 				for song in set(user_songs[vid])-set(user_songs[uid]):
-					candidate_songs[song]+= sim
+					candidate_songs[song] += sim
 		
 			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n]
 			self.result[uid] = [song[0] for song in top_n_songs]
