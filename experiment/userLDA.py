@@ -6,7 +6,10 @@ import numpy as np
 from models import BaseModel, BaseDataSet
 from collections import *
 import json
-from gensim import corpora, models, similarities
+try:
+	from gensim import corpora, models, similarities
+except:
+	pass
 
 class UserLDA(BaseModel):
 	def __init__(self):
