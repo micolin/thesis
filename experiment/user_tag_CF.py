@@ -32,6 +32,7 @@ class UserTagCF(BaseModel):
 	def build_userTagDistribution(self,user_songs,item_tag_file,user_tag_file):
 		'''
 		@Desc: build user-tag distribution from input_file
+		@params[in]: user_songs: dict, {uid:[sid,]}
 		@params[in]: item_tag_file: path of file contains item_tag distribution
 		@params[in]: user_tag_file: path of output
 		'''
@@ -47,7 +48,7 @@ class UserTagCF(BaseModel):
 		time_st = time.time()
 		#Build user-tag distribution
 		for uid,songs in user_songs.items():
-			tag_dict = defaultdict(int)
+			tag_dict = defaultdict(float)
 			for song in songs:
 				try:
 					tag_freq_sum=sum(song_tag_distrib[song].values())	#Modify [accepted]
@@ -56,6 +57,42 @@ class UserTagCF(BaseModel):
 						tag_dict[tag] += float(song_tag_distrib[song][tag])/tag_freq_sum	#Modify [accepted]
 				except:
 					#There's no tag info to the song
+					pass
+			self.user_tag_distrib[uid]=tag_dict
+			
+			#Dump to file
+			data_in_json = json.dumps(tag_dict)
+			fin.write('%s\t%s\n'%(uid,data_in_json))
+		
+		fin.close()
+		time_ed = time.time()
+		logging.info("Build user-tag distribution cost: %s"%(time_ed-time_st))
+
+	def build_userTagDistribution_norm(self,user_songs,item_tag_file,user_tag_file):
+		'''
+		@Desc: build user-tag distribution from input_file
+		@params[in]: user_songs: dict, {uid:[sid,]}
+		@params[in]: item_tag_file: path of file contains item_tag distribution
+		@params[in]: user_tag_file: path of output
+		'''
+		#Load user_tag distribution if user_tag_file exists
+		if os.path.exists(user_tag_file):
+			self.load_userTagDistribuition(user_tag_file)
+			return
+		
+		#Load song_tag info from file
+		song_tag_distrib = self.load_item_tag(item_tag_file)
+		
+		#Build user-tag distribution
+		time_st = time.time()
+		fin = open(user_tag_file,'wb')
+		for uid,songs in user_songs.items():
+			tag_dict = defaultdict(float)
+			for song in songs:
+				try:
+					for tag in song_tag_distrib[song].keys():
+						tag_dict[tag] += song_tag_distrib[song][tag]
+				except:
 					pass
 			self.user_tag_distrib[uid]=tag_dict
 			
@@ -192,7 +229,7 @@ def main():
 	recommender = UserTagCF()
 	recommender.build_userTagDistribution(dataset.train_data,item_tag_file,user_tag_file)
 	recommender.build_user_similarity(dataset.train_data,user_sim_file)
-
+	
 	#Recommendation
 	for user_k in range(20,101):
 		recommender.recommend(dataset.train_data,user_k=user_k,top_n=top_n)

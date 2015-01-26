@@ -154,8 +154,4 @@ class CosineHash(object):
 	def sgn(self,x):
 		return int(x>0)
 
-def test():
-	lsh_cosine = LSH_Cosine(10)
-	print lsh_cosine.rand_vec()
-
 #test()

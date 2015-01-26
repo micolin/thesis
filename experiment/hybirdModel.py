@@ -135,6 +135,10 @@ def main():
 	top_n = int(args[4])
 	recommend_job = args[5]
 	
+	#Log config
+	log_file = './log/hybirdModel_%s_%s_%s_%s_%s.log'%(set_level,train_prob,topic_num,recommend_job,top_n)
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename=log_file,filemode='w')
+	
 	#Filepath config
 	file_template = './song_dataset/user_dataset_%s_%s_%s' #set_level, type, train_prob
 	user_sim_file = './song_dataset/mid_data/user_sim_%s_%s.json'%(set_level,train_prob)
@@ -205,6 +209,5 @@ def main():
 	print "Best_Recall: %s"%(best_recall)
 
 if __name__=="__main__":
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/hybirdModel.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	main()

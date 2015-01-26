@@ -111,7 +111,7 @@ def main():
 	e_type = args[5]	#e_type: song or playlist
 	
 	#Log-Config
-	logfile = './log/userLDA_%s_%s_%s'%(set_level,train_prob,topic_num)
+	logfile = './log/userLDA_%s_%s_%s.log'%(set_level,train_prob,topic_num)
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename=logfile,filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	
