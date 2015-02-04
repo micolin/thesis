@@ -1,7 +1,7 @@
 #coding=utf8
 import urllib2
 from lxml import etree
-
+from assist_func import *
 
 class Tag(object):
 	def __init__(self,tag,dist):
