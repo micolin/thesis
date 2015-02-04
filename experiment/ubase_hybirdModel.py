@@ -145,9 +145,9 @@ def main():
 		topic_num = int(args[6])
 	
 	#Log config
-	#log_file = './log/hybirdModel_%s_%s_%s_%s_%s.log'%(set_level,train_prob,topic_num,recommend_job,top_n)
-	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename=log_file,filemode='w')
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
+	log_file = './log/ubase_hybirdModel_%s_%s_%s_%s.log'%(set_level,train_prob,recommend_job,top_n)
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename=log_file,filemode='w')
+	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	
 	#Filepath config
 	file_template = './song_dataset/user_dataset_%s_%s_%s' #set_level, type, train_prob
