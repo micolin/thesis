@@ -20,6 +20,11 @@ def detail(request):
 	try:
 		user = User.objects.get(uid=userid)
 	except:
+		u_crawler = Crawler(userid)
+		infos = u_crawler.get_basic_info()
+		songs = u_crawler.get_favor_songs()
+		print infos
+		print songs
 		return render_to_response("test.html")
 		
 	def build_tag_list(tag_list):
