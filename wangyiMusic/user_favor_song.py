@@ -17,7 +17,7 @@ class User:
 		logging.info('Getting favor song of user:%s'%(self.user_id))
 		st_idx = 0
 		favor_songs = []
-		url_temp = 'http://music.163.com/api/user/playlist?uid=%s&wordwrap=7&offset=%s&total=false&limit=%s'%(self.user_id,st_idx,300)
+		url_temp = 'http://music.163.com/api/user/playlist?uid=%s&wordwrap=7&offset=%s&total=false&limit=%s'%(self.user_id,st_idx,20)
 		refer_url = 'http://music.163.com/user/home?id=%s'%(self.user_id)
 		playlist_str = get_page(url_temp,refer_url)
 		playlist_json = json.loads(playlist_str)
@@ -34,6 +34,7 @@ class User:
 			for song_dom in songlist_dom.getchildren():
 				song_list.append(song_dom.attrib['data-id'])
 			return song_list
+
 		try:
 			favor_songs = get_song_from_playlist(pl_id)
 		except Exception,e:

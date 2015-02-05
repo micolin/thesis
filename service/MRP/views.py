@@ -25,6 +25,9 @@ def detail(request):
 			tag_distrib.append(Tag(item[0],item[1]))
 		return tag_distrib
 
+	if not user:
+		return render_to_response("test.html")
+		
 	tag_distrib = build_tag_list(json.loads(user.tag_distrib))
 	rec_songs = user.rec_songs
 	return render_to_response("detail.html",{'rec_songs':rec_songs,'interest':tag_distrib})
