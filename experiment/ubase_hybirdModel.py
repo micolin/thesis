@@ -17,11 +17,11 @@ class HybirdModel_UB(BaseModel):
 
 	def hybird_user_sim(self,user_songs, user_sim_file, hybird_sim_file, hybird_type='tag',theta=0.5):
 		time_st = time.time()
-		self.userCF.load_user_similarity(user_sim_file)
+		self.userCF.load_user_similarity(user_sim_file,norm=1)
 		if hybird_type == 'tag':
-			self.userTag.load_user_similarity(hybird_sim_file)
+			self.userTag.load_user_similarity(hybird_sim_file,norm=1)
 		elif hybird_type == 'lda':
-			self.userLda.load_user_similarity(hybird_sim_file)
+			self.userLda.load_user_similarity(hybird_sim_file,norm=1)
 		
 		#Rebuild user_similarity matrix
 		for uid in user_songs.keys():
@@ -190,9 +190,9 @@ def main():
 			recommender.hybird_user_sim(dataset.train_data,user_sim_file,userLDA_sim_file,hybird_type='lda',theta=0.55)
 	elif recommend_job in ('mix_result','mix_result_reorder'):
 		if hybird_type == 'tag':
-			recommender.userTag.load_user_similarity(userTag_sim_file)
+			recommender.userTag.load_user_similarity(userTag_sim_file,norm=1)
 		elif hybird_type == 'lda':
-			recommender.userLda.load_user_similarity(userLDA_sim_file)
+			recommender.userLda.load_user_similarity(userLDA_sim_file,norm=1)
 
 	for user_k in range(20,101):
 		if recommend_job == 'mix_sim':

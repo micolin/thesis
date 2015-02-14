@@ -81,13 +81,16 @@ class UserLDA(BaseModel):
 		time_ed = time.time()
 		logging.info("Calculate user-similarity cost: %s"%(time_ed-time_st))
 
-	def load_user_similarity(self,user_sim_file):
+	def load_user_similarity(self,user_sim_file,norm=0):
 		time_st = time.time()
 		with open(user_sim_file,'rb') as fin:
 			for line in fin.readlines():
 				line = line.strip().split('\t')
 				uid = line[0]
 				sim_users = json.loads(line[1])
+				if norm and sim_users:
+					max_sim = sim_users[0][1]
+					sim_users = [[user[0],user[1]/max_sim] for user in sim_users]
 				self.user_similarity[uid] = sim_users
 		time_ed = time.time()
 		logging.info("Load user-similarity cost: %s"%(time_ed-time_st))
@@ -170,5 +173,12 @@ def main():
 	print "Best_Precision: %s"%(best_precision)
 	print "Best_Recall: %s"%(best_recall)
 
+def test():
+	user_sim_file = './song_dataset/mid_data/user_sim_with_lda_%s_%s_%s.json'%(500,0.7,1500)
+	lda = UserLDA()
+	lda.load_user_similarity(user_sim_file,norm=1)
+	
+
 if __name__=="__main__":
 	main()
+	#test()

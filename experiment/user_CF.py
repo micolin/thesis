@@ -62,7 +62,7 @@ class UserCF(BaseModel):
 		time_ed = time.time()
 		logging.info("Calculate user-similarity cost: %s"%(time_ed-time_st))
 	
-	def load_user_similarity(self,user_sim_file):
+	def load_user_similarity(self,user_sim_file,norm=0):
 		'''
 		@Desc: load user similarity matrix from file
 		@params[in] user_sim_file: file of user_similarity json 
@@ -73,6 +73,9 @@ class UserCF(BaseModel):
 				line = line.strip().split('\t')
 				uid = line[0]
 				sim_users = json.loads(line[1])
+				if norm and sim_users:
+					max_sim = sim_users[0][1]
+					sim_users = [[user[0],user[1]/max_sim] for user in sim_users]
 				self.user_similarity[uid] = sim_users
 		time_ed = time.time()
 		logging.info("Load user-similarity cost: %s"%(time_ed-time_st))
@@ -162,4 +165,3 @@ if __name__=="__main__":
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log',filemode='w')
 	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	main()
-	

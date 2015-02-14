@@ -3,7 +3,7 @@ TRAIN_PROB=0.7
 E_TYPE='song'
 TOPIC_NUM=1500
 
-for set_level in "500"
+for set_level in "500_1" "500_2" "500_3" "500_4" "500_5" "500_6" "500_7" "500_8" "500_9"
 do 
 	#####################
 	#>>>>---Baseline--<<<<
@@ -32,11 +32,11 @@ do
 		#####################
 		for recommend_job in "mix_sim" "mix_result" "mix_sim_reorder" "mix_result_reorder"
 		do
-			#python hybirdModel.py $set_level $TRAIN_PROB $TOPIC_NUM $top_n $recommend_job > ${RESULT_ROOT_DIR}/${set_level}/hybirdModel_${set_level}_${TRAIN_PROB}_${recommend_job}
+			python hybirdModel.py $set_level $TRAIN_PROB $TOPIC_NUM $top_n $recommend_job > ${RESULT_ROOT_DIR}/${set_level}/new/hybirdModel_${set_level}_${TRAIN_PROB}_${recommend_job}
 			
-			python ubase_hybirdModel.py $set_level $TRAIN_PROB 'tag' $recommend_job $top_n > ${RESULT_ROOT_DIR}/${set_level}/ub_hybird_tag_${set_level}_${TRAIN_PROB}_${recommend_job}
+			python ubase_hybirdModel.py $set_level $TRAIN_PROB 'tag' $recommend_job $top_n > ${RESULT_ROOT_DIR}/${set_level}/new/ub_hybird_tag_${set_level}_${TRAIN_PROB}_${recommend_job}
 
-			python ubase_hybirdModel.py $set_level $TRAIN_PROB 'lda' $recommend_job $top_n $TOPIC_NUM > ${RESULT_ROOT_DIR}/${set_level}/ub_hybird_lda_${set_level}_${TRAIN_PROB}_${recommend_job}
+			python ubase_hybirdModel.py $set_level $TRAIN_PROB 'lda' $recommend_job $top_n $TOPIC_NUM > ${RESULT_ROOT_DIR}/${set_level}/new/ub_hybird_lda_${set_level}_${TRAIN_PROB}_${recommend_job}
 		done
 	done
 done
