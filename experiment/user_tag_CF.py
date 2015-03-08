@@ -193,7 +193,8 @@ class UserTagCF(BaseModel):
 				for song in set(user_songs[vid])-set(user_songs[uid]):
 					candidate_songs[song]+=sim
 			top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1],reverse=True)[:top_n]
-			self.result[uid] = [song[0] for song in top_n_songs]
+			top_n_songs = [song[0] for song in top_n_songs]
+			print "%s\t%s"%(uid,json.dumps(top_n_songs))	#输出top_n推荐结果到文件
 
 		re_time_ed = time.time()
 		self.cost_time = re_time_ed - re_time_st
@@ -202,7 +203,11 @@ def main():
 	args = sys.argv
 	set_level = args[1]
 	train_prob = args[2]
-	top_n = int(args[3])
+	user_k = int(args[3])
+	try:
+		top_n = int(args[4])
+	except:
+		top_n = 500		#输出top500的推荐到文件
 	
 	#Filepath config
 	item_tag_file = './song_dataset/mid_data/song_tag_distribution.json'
@@ -217,45 +222,15 @@ def main():
 	dataset = BaseDataSet()
 	dataset.build_data(train_file,test_file)
 	logging.info("Build dataset cost:%s"%(dataset.cost_time))
-	print "DataForTrain: %s"%(train_file)
-	print "DataForTest: %s"%(test_file)
-	print "Dataset train_set info: %s"%(dataset.get_train_info())
-	print "Dataset test_set info: %s"%(dataset.get_test_info())
-
-	#Record best scores
-	best_f_score = {'f_score':0}
-	best_precision = {'precision':0}
-	best_recall = {'recall':0}
 	
 	#Initiate recommender
 	recommender = UserTagCF()
 	recommender.build_userTagDistribution(dataset.train_data,item_tag_file,user_tag_file)
-	recommender.build_user_similarity(dataset.train_data,user_sim_file,top_user_k=1000)
+	recommender.build_user_similarity(dataset.train_data,user_sim_file,top_user_k=1000)		#保留用户的top1000个最相近的用户
 	
 	#Recommendation
-	for user_k in [5]+range(10,101,10):
-		recommender.recommend(dataset.train_data,user_k=user_k,top_n=top_n)
-		logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
-		scores = recommender.score(dataset.test_data,len(dataset.all_songs))
-		print "User_k:%s\tTop_n:%s\tScores:%s"%(user_k,top_n,scores)
-
-		#Find Best Score
-		if scores['f_score'] > best_f_score['f_score']:
-			best_f_score = scores
-			best_f_score['user_k'] = user_k
-			best_f_score['top_n'] = top_n
-		if scores['precision'] > best_precision['precision']:
-			best_precision = scores
-			best_precision['user_k']=user_k
-			best_precision['top_n'] = top_n
-		if scores['recall'] > best_recall['recall']:
-			best_recall = scores
-			best_recall['user_k']=user_k
-			best_recall['top_n'] = top_n
-	
-	print "Best_F_Score: %s"%(best_f_score)
-	print "Best_Precision: %s"%(best_precision)
-	print "Best_Recall: %s"%(best_recall)
+	recommender.recommend(dataset.train_data,user_k=user_k,top_n=top_n)
+	logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
 	
 if __name__=="__main__":
 	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userTagCF.log',filemode='w')

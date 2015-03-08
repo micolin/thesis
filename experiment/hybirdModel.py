@@ -48,12 +48,14 @@ class HybirdModel(BaseModel):
 				for song in set(user_songs[vid])-set(user_songs[uid]):
 					candidate_songs[song] += sim
 			if reorder:
-				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n*4]
+				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:500]
 				top_n_songs = self.reorder_withItemTag(user_tags[uid],item_tags,top_n_songs)[:top_n]
-				self.result[uid] = [song[0] for song in top_n_songs]
 			else:
 				top_n_songs = sorted(candidate_songs.items(),key=lambda x:x[1], reverse=True)[:top_n]
-				self.result[uid] = [song[0] for song in top_n_songs]
+			
+			top_n_songs = [song[0] for song in top_n_songs]
+			print "%s\t%s"%(uid,json.dumps(top_n_songs))	#输出top_n推荐结果到文件
+
 		time_ed = time.time()
 		self.cost_time = time_ed - time_st
 
@@ -132,12 +134,16 @@ def main():
 	set_level = args[1]
 	train_prob = args[2]
 	topic_num = int(args[3])
-	top_n = int(args[4])
-	recommend_job = args[5]
+	recommend_job = args[4]
+	user_k = int(args[5])
+	try:
+		top_n = int(args[6])
+	except:
+		top_n = 500
 	
 	#Log config
 	log_file = './log/hybirdModel_%s_%s_%s_%s_%s.log'%(set_level,train_prob,topic_num,recommend_job,top_n)
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename=log_file,filemode='w')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename=log_file)
 	
 	#Filepath config
 	file_template = './song_dataset/user_dataset_%s_%s_%s' #set_level, type, train_prob
@@ -151,15 +157,6 @@ def main():
 	dataset = BaseDataSet()
 	dataset.build_data(train_file,test_file)
 	logging.info("Build dataset cost:%s"%(dataset.cost_time))
-	print "DataForTrain: %s"%(train_file)
-	print "DataForTest: %s"%(test_file)
-	print "Dataset train_set info: %s"%(dataset.get_train_info())
-	print "Dataset test_set info: %s"%(dataset.get_test_info())
-
-	#Record best scores
-	best_f_score = {'f_score':0}
-	best_precision = {'precision':0}
-	best_recall = {'recall':0}
 
 	#Data Preparation
 	items_tag_dict = {}
@@ -177,37 +174,15 @@ def main():
 		recommender.userTag.load_user_similarity(userTag_sim_file,norm=1)
 		recommender.userLda.load_user_similarity(userLDA_sim_file,norm=1)
 
-	for user_k in [5]+range(10,101,10):
-		if recommend_job == 'mix_sim':
-			recommender.recommend(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n,reorder=0)
-		elif recommend_job == 'mix_sim_reorder':
-			recommender.recommend(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n,reorder=1)
-		elif recommend_job == 'mix_result':
-			recommender.hybird_recommend_result(dataset.train_data,user_k,top_n)
-		elif recommend_job == 'mix_result_reorder':
-			recommender.hybird_result_withReorder(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n)
-		logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
-		scores = recommender.score(dataset.test_data,len(dataset.all_songs))
-		print "User_k:%s\tTop_n:%s\tScores:%s"%(user_k,top_n,scores)
-
-		#Find Best Score
-		if scores['f_score'] > best_f_score['f_score']:
-			best_f_score = scores
-			best_f_score['user_k'] = user_k
-			best_f_score['top_n'] = top_n
-		if scores['precision'] > best_precision['precision']:
-			best_precision = scores
-			best_precision['user_k']=user_k
-			best_precision['top_n'] = top_n
-		if scores['recall'] > best_recall['recall']:
-			best_recall = scores
-			best_recall['user_k']=user_k
-			best_recall['top_n'] = top_n
-	
-	print "Best_F_Score: %s"%(best_f_score)
-	print "Best_Precision: %s"%(best_precision)
-	print "Best_Recall: %s"%(best_recall)
+	if recommend_job == 'mix_sim':
+		recommender.recommend(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n,reorder=0)
+	elif recommend_job == 'mix_sim_reorder':
+		recommender.recommend(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n,reorder=1)
+	elif recommend_job == 'mix_result':
+		recommender.hybird_recommend_result(dataset.train_data,user_k,top_n)
+	elif recommend_job == 'mix_result_reorder':
+		recommender.hybird_result_withReorder(dataset.train_data,users_tag_dict,items_tag_dict,user_k,top_n)
+	logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
 
 if __name__=="__main__":
-	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	main()

@@ -60,6 +60,7 @@ if __name__=="__main__":
 	dataset = args[2]
 	train_prob = args[3]
 	user_k = args[4]
+	top_n = int(args[5])
 	
 	#Filepath config
 	rec_file = './rec_result/%s_%s_%s_%s'%(method,dataset,train_prob,user_k)
@@ -68,7 +69,6 @@ if __name__=="__main__":
 	measurer = Measurer()
 	measurer.build_data(rec_file,train_file,test_file)
 	
-	for top_n in range(10,101,10):
-		score = measurer.score(top_n)
-		print top_n,score
+	score = measurer.score(top_n)
+	print top_n,score
 	

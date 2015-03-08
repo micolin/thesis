@@ -49,6 +49,7 @@ class UserCF(BaseModel):
 					except:
 						uid_interSong[user_list[u]][user_list[v]] = 1
 		
+		logging.info("Calculating user-similarity")
 		fin = open(user_sim_file,'wb')
 		for uid,sim_users in uid_interSong.items():
 			sim_user_dict = defaultdict(float)
@@ -63,7 +64,7 @@ class UserCF(BaseModel):
 			fin.write('%s\t%s\n'%(uid,data_in_json))	
 		
 		time_ed = time.time()
-		logging.info("Calculate user-similarity cost: %s"%(time_ed-time_st))
+		logging.info("Building user-similarity cost: %s"%(time_ed-time_st))
 	
 	def load_user_similarity(self,user_sim_file,norm=0):
 		'''
@@ -136,6 +137,6 @@ def main():
 	logging.info("Train_prob:%s User_k:%s Top_n:%s cost:%s"%(train_prob,user_k,top_n,recommender.cost_time))
 
 if __name__=="__main__":
-	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log',filemode='w')
-	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
+	logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/userCF.log')
+	#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
 	main()
