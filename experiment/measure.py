@@ -1,6 +1,7 @@
 #coding=utf8
 import sys,os
 import json
+import matplotlib.pyplot as plt
 class Measurer(object):
 	def __init__(self):
 		self.rec_result = {}
@@ -54,13 +55,12 @@ class Measurer(object):
 				line = line.strip().split('\t')
 				self.test_set[line[0]] = [song for song in line[1].split(',') if song in all_songs]
 
-if __name__=="__main__":
-	args = sys.argv
-	method = args[1]
-	dataset = args[2]
-	train_prob = args[3]
-	user_k = args[4]
-	top_n = int(args[5])
+def measurement(args):
+	method = args[2]
+	dataset = args[3]
+	train_prob = args[4]
+	user_k = args[5]
+	top_n = int(args[6])
 	
 	#Filepath config
 	rec_file = './rec_result/%s_%s_%s_%s'%(method,dataset,train_prob,user_k)
@@ -71,4 +71,37 @@ if __name__=="__main__":
 	
 	score = measurer.score(top_n)
 	print top_n,score
-	
+
+def plot(args):
+	dataset = args[2]
+	train_prob = args[3]
+	user_k = args[4]
+	mea_type = args[5]
+	methods = ['rs','pop','userCF','userLDA','userTagCF','ubhybird_mix_sim_reorder']
+	methods = ['rs','pop','userCF','ubhybird_mix_sim_reorder']
+	#methods = ['userCF']
+
+	for method in methods:
+		if method in ['rs','pop']:
+			rec_file = './rec_result/%s_%s_%s'%(method,dataset,train_prob)
+		else:	
+			rec_file = './rec_result/%s_%s_%s_%s'%(method,dataset,train_prob,user_k)
+		train_file = './song_dataset/user_dataset_%s_train_%s'%(dataset,train_prob)
+		test_file = './song_dataset/user_dataset_%s_test_%s'%(dataset,train_prob)
+		measurer = Measurer()
+		measurer.build_data(rec_file,train_file,test_file)
+		scores = []
+		for top_n in range(1,400,1):
+			score = measurer.score(top_n)[mea_type]
+			scores.append((top_n,score))
+		line = plt.plot([score[0] for score in scores],[score[1] for score in scores],linewidth=2, label=method)
+	if mea_type in ['recall','cover_rate']:
+		plt.legend(loc='upper left')
+	else:	
+		plt.legend(loc='upper right')
+	plt.show()
+
+if __name__=="__main__":
+	args = sys.argv
+	func = globals()[args[1]]
+	func(args)
