@@ -7,6 +7,10 @@ class User(Document):
 	tag_distrib = StringField()
 	rec_songs = StringField()
 
+class UserRec(Document):
+	uid = StringField(required=True,primary_key=True)
+	rec_songs = StringField()
+
 class Song(Document):
 	sid = StringField(required=True,primary_key=True)
 	song_name = StringField(max_length=100)

@@ -8,7 +8,7 @@ class BaseModel(object):
 	def __init__(self):
 		self.result = {}
 		self.cost_time = 0
-	def score(self,test_set):
+	def score(self,test_set,all_song_num=1):
 		'''
 		@Desc: measure precision, recall and f_score of recommendation
 		@params[in] test_set: BaseDataSet.test_data, {uid:[songid,]}
@@ -17,11 +17,13 @@ class BaseModel(object):
 		hit = 0
 		predict_tot = 0
 		recall_tot = 0
+		rec_songs = set()
 		for uid, predict_songs in self.result.iteritems():
 			test_songs = test_set[uid]
 			hit += len(set(predict_songs) & set(test_songs))
 			predict_tot += len(predict_songs)
 			recall_tot += len(test_songs)
+			rec_songs.update(set(predict_songs))
 		
 		precision = float(hit)/predict_tot
 		recall = float(hit)/recall_tot
@@ -29,7 +31,9 @@ class BaseModel(object):
 			fscore = 0.0
 		else:
 			fscore = 2.0*(precision*recall)/(precision+recall)
-		scores = {'precision':precision,'recall':recall,'f_score':fscore}
+
+		enrich=float(len(rec_songs))/all_song_num
+		scores = {'precision':precision,'recall':recall,'f_score':fscore,'cover_rate':enrich}
 		return scores
 
 class BaseDataSet(object):
@@ -40,7 +44,7 @@ class BaseDataSet(object):
 		self.train_data = {}	#{uid:[songid,]}
 		self.test_data = {}		#{uid:[songid,]}
 		self.all_songs = set()
-		self.song_tag = {}		#
+		self.song_tag = {}	
 		self.user_tag = {}
 		self.cost_time = 0
 	
@@ -126,32 +130,3 @@ class TopKHeap(object):
 		'''
 		return [(x[1],x[0]) for x in sorted([heapq.heappop(self.data) for i in range(len(self.data))],key=lambda x:x[0],reverse=True)]
 
-import random
-
-def dot(u,v):
-    return sum(ux*vx for ux,vx in zip(u,v))
-
-class LSH_Cosine(object):
-	def __init__(self,d):
-		self.d = d
-	
-	def rand_vec(self):
-		return [random.gauss(0,1) for i in range(self.d)]
-
-	def create_hash_func(self):
-		return CosineHash(self.rand_vec())
-	
-	def combine(self,hashes):
-		return sum(2**i if h > 0 else 0 for i,h in enumerate(hashes))
-
-class CosineHash(object):
-	def __init__(self,r):
-		self.r = r
-
-	def hash(self,vec):
-		return self.sgn(dot(vec,self.r))
-
-	def sgn(self,x):
-		return int(x>0)
-
-#test()

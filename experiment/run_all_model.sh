@@ -3,17 +3,27 @@ TRAIN_PROB=0.7
 E_TYPE='song'
 TOPIC_NUM=1500
 
-for set_level in "500_1" "500_2" "500_3" "500_4" "500_5" "500_6" "500_7" "500_8" "500_9"
+for set_level in "1w"
 do 
 	#####################
 	#>>>>---Baseline--<<<<
 	#####################
 	#python random_select.py $set_level $TRAIN_PROB $E_TYPE > ./song_dataset/result_more/rs_${set_level}_${TRAIN_PROB} 
-	#python popularity.py $set_level $TRAIN_PROB $E_TYPE > ./song_dataset/result_more/rs_${set_level}_${TRAIN_PROB}
+	#python popularity.py $set_level $TRAIN_PROB $E_TYPE > ./song_dataset/result_more/pop_${set_level}_${TRAIN_PROB}
 
-	for top_n in "50"
+	for top_n in "5"
 	do
 		RESULT_ROOT_DIR='./song_dataset/result_top'${top_n}
+		if [ ! -d ${RESULT_ROOT_DIR} ]
+		then
+			mkdir $RESULT_ROOT_DIR
+		fi
+
+		OUTPUT_DIR=${RESULT_ROOT_DIR}'/'${set_level}
+		if [ ! -d ${OUTPUT_DIR} ]
+		then
+			mkdir $OUTPUT_DIR
+		fi
 		#####################
 		#>>>>---Baseline--<<<<
 		#####################
@@ -30,13 +40,14 @@ do
 		#####################
 		#>>>>---HybirdModel--<<<<
 		#####################
-		for recommend_job in "mix_sim" "mix_result" "mix_sim_reorder" "mix_result_reorder"
+		for recommend_job in "mix_sim" "mix_sim_reorder"
 		do
 			python hybirdModel.py $set_level $TRAIN_PROB $TOPIC_NUM $top_n $recommend_job > ${RESULT_ROOT_DIR}/${set_level}/new/hybirdModel_${set_level}_${TRAIN_PROB}_${recommend_job}
 			
 			python ubase_hybirdModel.py $set_level $TRAIN_PROB 'tag' $recommend_job $top_n > ${RESULT_ROOT_DIR}/${set_level}/new/ub_hybird_tag_${set_level}_${TRAIN_PROB}_${recommend_job}
 
 			python ubase_hybirdModel.py $set_level $TRAIN_PROB 'lda' $recommend_job $top_n $TOPIC_NUM > ${RESULT_ROOT_DIR}/${set_level}/new/ub_hybird_lda_${set_level}_${TRAIN_PROB}_${recommend_job}
+			#python ubase_hybirdModel.py $set_level $TRAIN_PROB 'lda' $recommend_job $top_n $TOPIC_NUM
 		done
 	done
 done
