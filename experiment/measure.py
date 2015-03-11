@@ -63,7 +63,11 @@ def measurement(args):
 	top_n = int(args[6])
 	
 	#Filepath config
-	rec_file = './rec_result/%s_%s_%s_%s'%(method,dataset,train_prob,user_k)
+	topic_num = 3000
+	rec_file = './rec_result/%s/%s_%s_%s_%s'%(dataset,method,dataset,train_prob,user_k)
+	if method == 'userLDA':
+		rec_file = './rec_result/%s/%s_%s_%s_%s_%s'%(dataset,method,dataset,train_prob,topic_num,user_k)
+			
 	train_file = './song_dataset/user_dataset_%s_train_%s'%(dataset,train_prob)
 	test_file = './song_dataset/user_dataset_%s_test_%s'%(dataset,train_prob)
 	measurer = Measurer()
