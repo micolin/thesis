@@ -65,7 +65,9 @@ def measurement(args):
 	#Filepath config
 	topic_num = 3000
 	rec_file = './rec_result/%s/%s_%s_%s_%s'%(dataset,method,dataset,train_prob,user_k)
-	if method == 'userLDA':
+	if method in ['rs','pop']:
+		rec_file = './rec_result/%s_%s_%s'%(method,dataset,train_prob)
+	elif method == 'userLDA' or 'lda' in method:
 		rec_file = './rec_result/%s/%s_%s_%s_%s_%s'%(dataset,method,dataset,train_prob,topic_num,user_k)
 			
 	train_file = './song_dataset/user_dataset_%s_train_%s'%(dataset,train_prob)
@@ -81,6 +83,7 @@ def plot(args):
 	train_prob = args[3]
 	user_k = args[4]
 	mea_type = args[5]
+	topic_num = int(args[6])
 	methods = ['rs','pop','userCF','userLDA','userTagCF','ubhybird_mix_sim_reorder']
 	methods = ['rs','pop','userCF','ubhybird_mix_sim_reorder']
 	#methods = ['userCF']
@@ -88,6 +91,8 @@ def plot(args):
 	for method in methods:
 		if method in ['rs','pop']:
 			rec_file = './rec_result/%s_%s_%s'%(method,dataset,train_prob)
+		elif 'lda' in method or method == 'userLDA':
+			rec_file = './rec_result/%s_%s_%s_%s_%s'%(method,dataset,train_prob,topic_num,user_k)
 		else:	
 			rec_file = './rec_result/%s_%s_%s_%s'%(method,dataset,train_prob,user_k)
 		train_file = './song_dataset/user_dataset_%s_train_%s'%(dataset,train_prob)

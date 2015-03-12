@@ -21,4 +21,5 @@ urlpatterns = patterns('',
 	url(r'^search/$',search),
 	url(r'^search/detail/$',detail),
 	url(r'^save/$',saveUser),
+	url(r'^topic/$',ldatopic)
 )

@@ -139,7 +139,7 @@ def main():
 	
 	#Initiate Recommender
 	recommender = UserLDA()
-	recommender.build_user_similarity(user_sim_file,dataset.train_data,topic_num=topic_num, top_user_k=1000)
+	recommender.build_user_similarity(user_sim_file,dataset.train_data,topic_num=topic_num, top_user_k=300)
 	
 	#Recommendation
 	recommender.recommend(dataset.train_data,user_k=user_k,top_n=top_n)
