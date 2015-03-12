@@ -15,7 +15,7 @@ class HybirdModel_UB(BaseModel):
 		self.userTag = UserTagCF()
 		self.userLda = UserLDA()
 
-	def hybird_user_sim(self,user_songs, user_sim_file, hybird_sim_file, hybird_type='tag',theta=0.5):
+	def hybird_user_sim(self,user_songs, user_sim_file, hybird_sim_file, hybird_type='tag',theta=0.5,mix_type=0):
 		time_st = time.time()
 		self.userCF.load_user_similarity(user_sim_file,norm=1)
 		if hybird_type == 'tag':
@@ -33,16 +33,22 @@ class HybirdModel_UB(BaseModel):
 			'''
 			
 			for (vid,sim) in self.userCF.user_similarity[uid]:
-				#candidate_user[vid] += sim * theta + 1
-				candidate_user[vid] += sim * theta + 1
+				if mix_type:
+					candidate_user[vid] += sim * theta + 1
+				else:
+					candidate_user[vid] += sim * theta
 			if hybird_type == 'tag':
 				for (vid,sim) in self.userTag.user_similarity[uid]:
-					#candidate_user[vid] *= (1+sim*(1-theta))
-					candidate_user[vid] *= (1+sim*(1-theta))
+					if mix_type:
+						candidate_user[vid] *= (1+sim*(1-theta))
+					else:
+						candidate_user[vid] += sim*(1-theta)
 			elif hybird_type == 'lda':
 				for (vid,sim) in self.userLda.user_similarity[uid]:
-					#candidate_user[vid] *= (1+sim * (1-theta))
-					candidate_user[vid] *= (1+sim * (1-theta))
+					if mix_type:
+						candidate_user[vid] *= (1+sim * (1-theta))
+					else:
+						candidate_user[vid] += sim * (1-theta)
 
 			#Sort sim user:
 			sorted_sim_user = sorted(candidate_user.items(),key=lambda x:x[1],reverse=True)
@@ -183,9 +189,9 @@ def main():
 	recommender = HybirdModel_UB()
 	if recommend_job in ('mix_sim','mix_sim_reorder'):
 		if hybird_type == 'tag':
-			recommender.hybird_user_sim(dataset.train_data,user_sim_file,userTag_sim_file,hybird_type='tag',theta=0.9)
+			recommender.hybird_user_sim(dataset.train_data,user_sim_file,userTag_sim_file,hybird_type='tag',theta=0.8,mix_type=0)
 		elif hybird_type == 'lda':
-			recommender.hybird_user_sim(dataset.train_data,user_sim_file,userLDA_sim_file,hybird_type='lda',theta=0.9)
+			recommender.hybird_user_sim(dataset.train_data,user_sim_file,userLDA_sim_file,hybird_type='lda',theta=0.9,mix_type=0)
 	elif recommend_job in ('mix_result','mix_result_reorder'):
 		if hybird_type == 'tag':
 			recommender.userTag.load_user_similarity(userTag_sim_file,norm=1)
