@@ -164,7 +164,7 @@ def main():
 	
 	#Filepath config
 	file_template = './song_dataset/user_dataset_%s_%s_%s' #set_level, type, train_prob
-	user_sim_file = './song_dataset/mid_data/user_sim_%s_%s.json'%(set_level,train_prob)
+	user_sim_file = './song_dataset/mid_data/user_sim_%s_%s.json'%(set_level,train_prob)	#Similarity file of userCF
 	if hybird_type == 'tag':
 		userTag_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s.json'%(set_level,train_prob)
 	if hybird_type == 'lda':

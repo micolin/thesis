@@ -211,12 +211,11 @@ def main():
 	
 	#Filepath config
 	item_tag_file = './song_dataset/mid_data/song_tag_distribution.json'
-	#item_tag_file = './song_dataset/mid_data/song_tag_dist_with_singer.json'
 	user_tag_file = './song_dataset/mid_data/user_tag_distribution_%s_%s.json'%(set_level,train_prob)
 	file_template = './song_dataset/user_dataset_%s_%s_%s'	#set_num,type,train_prob
 	train_file = file_template%(set_level,'train',train_prob)
 	test_file = file_template%(set_level,'test',train_prob)
-	user_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s.json'%(set_level,train_prob)
+	user_sim_file = './song_dataset/mid_data/user_similarity_withTag_%s_%s.json'%(set_level,train_prob)	
 	
 	#Build dataset
 	dataset = BaseDataSet()

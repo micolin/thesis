@@ -7,13 +7,56 @@ import urllib2
 from lxml import etree
 import logging,json
 
-#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
-logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/build_it_distrib.log',filemode='w')
+logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s')
+#logging.basicConfig(level=logging.INFO,format='%(asctime)s %(levelname)s %(funcName)s %(lineno)d %(message)s',filename='./log/build_it_distrib.log',filemode='w')
 
-def build_ITDistribution(item_tag_file):
+def build_ITDistribution_withWeight(item_tag_file):
 	'''
 	@Desc: build item-tag distribution from database
-	@params[in]: item_tag_file: path of item_tag distribution file
+	@params[in]: item_tag_file: path of output
+	'''
+	song_tag_distrib=defaultdict(dict)
+	#Build item-tag distribution
+	time_st = time.time()
+	db = db_connection()
+	collection = db['playlist_info']
+	records = collection.find()
+	
+	count = 0
+	all_times = 0
+	for record in records:
+		play_times = int(record['play_times'])
+		all_times += play_times
+		count += 1
+
+	average_playtimes = all_times/count
+	records = collection.find()
+	for record in records:
+		songs = record['songs'].split(',')
+		tags = record['tags'].encode('utf8')
+		play_times = int(record['play_times'])
+		weight = float(play_times)/average_playtimes
+		if tags == "none" or weight <=0:
+			continue
+		for song in songs:
+			for tag in tags.split(','):
+				try:
+					song_tag_distrib[song][tag] += weight
+				except:
+					song_tag_distrib[song][tag] = weight
+
+	#Dump item-tag distribution to file
+	logging.info("Dumping item-tag distribution to file:%s"%(item_tag_file))
+	with open(item_tag_file,'wb') as fin:
+		for sid,tag_dist in song_tag_distrib.items():
+			data_in_json = json.dumps(tag_dist)
+			fin.write("%s\t%s\n"%(sid,data_in_json))
+	logging.info("Dumping process done..")
+
+def build_ITDistribution_with_singer(item_tag_file):
+	'''
+	@Desc: build item-tag distribution from database
+	@params[in]: item_tag_file: path of output
 	'''
 	song_tag_distrib=defaultdict(dict)
 	#Build item-tag distribution
@@ -56,13 +99,6 @@ def build_ITDistribution(item_tag_file):
 		data_in_json = json.dumps(tag_dist)
 		fin.write("%s\t%s\n"%(songid,data_in_json))
 	'''
-	#Dump item-tag distribution to file
-	logging.info("Dumping item-tag distribution to file:%s"%(item_tag_file))
-	with open(item_tag_file,'wb') as fin:
-		for sid,tag_dist in song_tag_distrib.items():
-			data_in_json = json.dumps(tag_dist)
-			fin.write("%s\t%s\n"%(sid,data_in_json))
-	logging.info("Dumping process done..")
 	'''
 	time_ed = time.time()
 	logging.info('Build item-tag distribution cost:%s'%(time_ed - time_st))
@@ -87,9 +123,6 @@ def get_singer_from_page(songid):
 	singer = singer_dom[0].text.encode('utf8')
 	return singer
 
-def build_item_tag_distribution(item_tag_file):
-	build_ITDistribution(item_tag_file)
-
 def test():
 	db = db_connection()
 	collection = db['song_info']
@@ -99,5 +132,7 @@ def test():
 
 if __name__=="__main__":
 	args = sys.argv
-	item_tag_file = args[1]
-	build_item_tag_distribution(item_tag_file)
+	job = args[1]
+	item_tag_file = args[2]
+	func = globals()[job]
+	func(item_tag_file)
