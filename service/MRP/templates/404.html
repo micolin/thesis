@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block body %}
+	{% block menu %}
+		<div class="masthead clearfix">
+			<div class="inner">
+				<h3 class="masthead-brand">MRP</h3>
+				<ul class="nav masthead-nav">
+					<li><a href="/home">Home</a></li>
+					<li class="active"><a href="#">About Me</a></li>
+				</ul>
+			</div>
+		</div>
+	{% endblock %}
+	{% block main_body %}
+		<div class="inner cover">
+			<h2 class="cover-heading">404: {{error}}</h2>
+			<p>{{message}}</p>
+		</div>
+	{% endblock %}
+{% endblock %}

@@ -10,6 +10,14 @@ class Tag(object):
 		self.tag = tag
 		self.dist = dist
 
+class MUser(object):
+	def __init__(self,name,gender,area,desc,img):
+		self.name = name
+		self.gender = gender
+		self.area = area
+		self.desc = desc
+		self.img = img
+
 class Crawler(object):
 	def __init__(self,uid):
 		self.uid = uid
@@ -88,12 +96,3 @@ class Crawler(object):
 			
 		return user_name,user_gender,user_area,tags
 
-class MUser(object):
-	def __init__(self,uid):
-		self.uid = uid
-
-	def cal_user_tag_distrib(self):
-		pass
-
-	def cal_user_sim_with_tag(self):
-		pass

@@ -1,7 +1,5 @@
 #coding=utf8
 from django.http import *
-from django.template.loader import get_template
-from django.template import Context, Template, RequestContext
 from django.shortcuts import render_to_response
 import json
 from models import *
@@ -18,8 +16,34 @@ def search(request):
 
 def detail(request):
 	userid = request.GET['uid']
+
+	def build_tag_list(tag_list,topk=5):
+		tag_distrib = []
+		tag_list = sorted(tag_list,key=lambda x:x[1],reverse=True)[:topk]
+		all_sum = sum([tag[1] for tag in tag_list])
+		tag_list = [(tag[0],float(tag[1])/all_sum) for tag in tag_list]
+		for item in tag_list:
+			tag_distrib.append(Tag(item[0],str(round(item[1]*100,2))+'%'))
+		return tag_distrib
+
 	try:
 		user = User.objects.get(uid=userid)
+		if user.desc == 'none':
+			userinfo = MUser(user.user_name.encode('utf8'),user.gender,user.area,'',user.img)
+		else:
+			userinfo = MUser(user.user_name.encode('utf8'),user.gender,user.area,user.desc,user.img)
+				
+		user_rec = Recommend.objects.get(uid=userid)
+		tag_distrib = build_tag_list(json.loads(user_rec.interests))
+		rec_songs = ','.join(json.loads(user_rec.rec_songs)[:20])
+		return render_to_response("detail.html",{'basic_info':userinfo,'rec_songs':rec_songs,'interest':tag_distrib})
+	except:
+		return render_to_response("404.html",{'error':"User missing!",'message':"User doesn't exist. Please try again later."})
+		
+	'''
+	try:
+		user_info = User.objects.get(uid=userid)
+		user_rec = Recommend.objects.get(uid=userid)
 	except:
 		u_crawler = Crawler(userid)
 		infos = u_crawler.get_basic_info()
@@ -27,16 +51,8 @@ def detail(request):
 		print infos
 		print songs
 		return render_to_response("test.html")
-		
-	def build_tag_list(tag_list):
-		tag_distrib = []
-		for item in tag_list:
-			tag_distrib.append(Tag(item[0],item[1]))
-		return tag_distrib
+	'''
 
-	tag_distrib = build_tag_list(json.loads(user.tag_distrib))
-	rec_songs = user.rec_songs
-	return render_to_response("detail.html",{'rec_songs':rec_songs,'interest':tag_distrib})
 
 def ldatopic(request):
 	#song_list = '540968,26418808,26447698,825646,28018269,28018274,26341140,29005974,725619,705376' #日语
@@ -55,9 +71,4 @@ def ldatopic(request):
 	#song_list = '209478,209314,209216,209235,209112,209129,209268,209028,209115,209238'	#陈绮贞
 	return render_to_response("topic.html",{'song_list':song_list})
 
-def saveUser(request):
-	tag_distrib = [('Pop','30%'),('R&B','30%'),('Blue','20%'),('Rock','10%')]
-	rec_songs = '2001320,26569168,5138277'
-	s_user=User(uid='12341234',user_name='user2',tag_distrib=json.dumps(tag_distrib),rec_songs=rec_songs)
-	s_user.save()
-	return render_to_response("test.html")
+

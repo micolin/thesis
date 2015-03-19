@@ -16,6 +16,10 @@
 	{% block main_body %}
 		<div class="row">
 			<div class='col-md-8'>
+				<img src={{basic_info.img}}></img>
+				<h4 >{{basic_info.name}}</h4>
+				<p>性别:{{basic_info.gender}}   地区:{{basic_info.area}}</p>
+				<p>{{basic_info.desc}}</p>
 				<h5>User Interest</h5>
 				{% for tag in interest %}
 				<div class="progress">
@@ -26,7 +30,7 @@
 				{% endfor %}
 			</div>
 			<div class='col-md-4'>
-				<h5 align="center">Recommend List of Songs</h5>
+				<h5 align="center">[Songs of Recommendation]</h5>
 				<embed src="http://music.163.com/style/swf/widget.swf?sid={{rec_songs}}&type=2&auto=0&width=310&height=430" width="340" height="450"  allowNetworking="all"></embed>
 			</div>
 		</div>
